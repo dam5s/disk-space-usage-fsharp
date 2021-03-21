@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="DiskSpaceUsage/FolderPath.fs" />
     <Compile Include="DiskSpaceUsage/FolderUsage.fs" />
+    <Compile Include="DiskSpaceUsage/FolderSizeView.fs" />
     <Compile Include="DiskSpaceUsage/Icons.fs" />
     <Compile Include="DiskSpaceUsage/MainUI.fs" />
     <Compile Include="DiskSpaceUsage/Program.fs" />

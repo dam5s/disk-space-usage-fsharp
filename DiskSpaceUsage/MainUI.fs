@@ -1,14 +1,15 @@
 ﻿module DiskSpaceUsage.MainUI
 
+open Elmish
 open Avalonia.Layout
 open Avalonia.Media
-open Elmish
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
 
 open Icons
 open FolderPath
 open FolderUsage
+open FolderSizeView
 
 type AsyncFolderUsage =
     | NotLoaded
@@ -63,30 +64,6 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         { model with folderUsage = Loaded usage }, Cmd.none
     | CloseFolder ->
         { model with folderUsage = NotLoaded }, Cmd.none
-
-module FolderSizeView =
-    let private tryUnit bytesPerUnit bytes =
-        let floatBytes = float bytes
-
-        if floatBytes > bytesPerUnit
-        then Some (floatBytes / bytesPerUnit)
-        else None
-
-    let private (|Gigabytes|_|) (Bytes bytes) =
-        tryUnit (1024.0 ** 3.0) bytes
-
-    let private (|Megabytes|_|) (Bytes bytes) =
-        tryUnit (1024.0 ** 2.0) bytes
-
-    let private (|Kilobytes|_|) (Bytes bytes) =
-        tryUnit 1024.0 bytes
-
-    let text size =
-        match size with
-        | Gigabytes value -> $"%.1f{value} GB"
-        | Megabytes value -> $"%.1f{value} MB"
-        | Kilobytes value -> $"%.1f{value} KB"
-        | Bytes value -> $"%d{value} B"
 
 let private notLoadedView dispatch =
     Grid.create [
