@@ -7,22 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="DiskSpaceUsage/FolderPath.fs" />
     <Compile Include="DiskSpaceUsage/FolderUsage.fs" />
+    <Compile Include="DiskSpaceUsage/Icons.fs" />
     <Compile Include="DiskSpaceUsage/MainUI.fs" />
     <Compile Include="DiskSpaceUsage/Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
+  <ItemGroup>
+    <AvaloniaResource Include="**/*.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="0.10.0" />
     <PackageReference Include="JaggerJo.Avalonia.FuncUI" Version="0.5.0-beta" />
     <PackageReference Include="JaggerJo.Avalonia.FuncUI.DSL" Version="0.5.0-beta" />
     <PackageReference Include="JaggerJo.Avalonia.FuncUI.Elmish" Version="0.5.0-beta" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove=".template.config/**" />
   </ItemGroup>
 
 </Project>
