@@ -1,9 +1,9 @@
-﻿module DiskSpaceUsage.FolderSizeView
+﻿module DiskSpaceUsage.SizeView
 
-open FolderUsage
+open DiskItem
 
 [<RequireQualifiedAccess>]
-module FolderSizeView =
+module SizeView =
     let private tryUnit bytesPerUnit bytes =
         let floatBytes = float bytes
 

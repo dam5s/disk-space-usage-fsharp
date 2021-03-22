@@ -6,17 +6,18 @@ open Avalonia.Layout
 open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
+open Avalonia.FuncUI.Types
 open Avalonia.FuncUI.Components
 
 open Icons
 open FolderPath
-open FolderUsage
-open FolderSizeView
+open DiskItem
+open SizeView
 
 type AsyncFolderUsage =
     | NotLoaded
     | Loading of FolderPath
-    | Loaded of FolderUsage
+    | Loaded of DiskItem
 
 type Model =
     { window: Window
@@ -29,7 +30,7 @@ let init window _ =
 type Msg =
     | OpenFolderSelectDialog
     | SelectFolder of FolderPath
-    | FinishLoading of FolderUsage
+    | FinishLoading of DiskItem
     | CloseFolder
 
 let private selectFolderAsync window =
@@ -50,7 +51,7 @@ let private selectFolderAsync window =
 
 let private loadFolderUsageAsync path =
     async {
-        let! usage = FolderUsage.loadAsync path
+        let! usage = DiskItem.loadAsync path
         return FinishLoading usage
     }
 
@@ -123,33 +124,22 @@ module private GraphRow =
         |> Array.tryLast
         |> Option.defaultValue fullPath
 
-    let private create name (Bytes size) (Bytes parentSize) =
-        { percentage = float size / float parentSize
-          name = name
-          size = FolderSizeView.text (Bytes size) }
+    let create (parent: DiskItem) (diskItem: DiskItem) =
+        let bytes = DiskItem.sizeInBytes diskItem
+        let parentBytes = DiskItem.sizeInBytes parent
 
-    let ofFolder (parent: FolderUsage) (folder: FolderUsage) =
-        create
-            (folder.path |> FolderPath.path |> fileName)
-            folder.size
-            parent.size
-
-    let ofFile (parent: FolderUsage) (file: FileUsage) =
-        create
-            (file.path |> FilePath.path |> fileName)
-            file.size
-            parent.size
+        { percentage = float bytes / float parentBytes
+          name = diskItem.name
+          size = SizeView.text diskItem.size }
 
 let private equalSize count =
     "*"
     |> List.replicate count
     |> String.concat ","
 
-let private sortedRows parent =
-    let fileCells = parent.subFiles |> List.map (GraphRow.ofFile parent)
-    let folderCells = parent.subFolders |> List.map (GraphRow.ofFolder parent)
-
-    fileCells @ folderCells
+let private sortedRows diskItem children dispatch =
+    children
+    |> List.map (GraphRow.create diskItem)
     |> List.sortBy (fun c -> - c.percentage)
 
 let private rowView (row: GraphRow) =
@@ -194,9 +184,29 @@ let private rowView (row: GraphRow) =
         Border.child content
     ]
 
-let private loadedView folder dispatch =
-    let fullPath = FolderPath.path folder.path
-    let sizeText = FolderSizeView.text folder.size
+let private folderView diskItem children dispatch =
+    let view = ItemsControl.create [
+        Grid.row 3
+
+        ItemsControl.dataItems (sortedRows diskItem children dispatch)
+        ItemsControl.itemTemplate (DataTemplateView<GraphRow>.create(rowView))
+    ]
+    view :> IView
+
+let private fileView diskItem dispatch =
+    let view = TextBlock.create [
+        Grid.row 3
+        TextBlock.text "file"
+    ]
+    view :> IView
+
+let private itemView (diskItem: DiskItem) dispatch =
+    match diskItem.itemType with
+    | File -> fileView diskItem dispatch
+    | Folder attributes -> folderView diskItem attributes.children dispatch
+
+let private loadedView (diskItem: DiskItem) dispatch =
+    let sizeText = SizeView.text diskItem.size
 
     Grid.create [
         Grid.columnDefinitions "*"
@@ -226,14 +236,9 @@ let private loadedView folder dispatch =
                 TextBlock.verticalAlignment VerticalAlignment.Top
                 TextBlock.textAlignment TextAlignment.Center
                 TextBlock.fontSize 24.0
-                TextBlock.text fullPath
+                TextBlock.text diskItem.name
             ]
-            ItemsControl.create [
-                Grid.row 3
-
-                ItemsControl.dataItems (sortedRows folder)
-                ItemsControl.itemTemplate (DataTemplateView<GraphRow>.create(rowView))
-            ]
+            itemView diskItem dispatch
         ]
     ]
 
@@ -241,4 +246,4 @@ let view (model: Model) (dispatch: Dispatch<Msg>) =
     match model.folderUsage with
     | NotLoaded -> notLoadedView dispatch
     | Loading path -> loadingView path dispatch
-    | Loaded usage -> loadedView usage dispatch
+    | Loaded diskItem -> loadedView diskItem dispatch
