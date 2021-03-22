@@ -10,14 +10,18 @@ type FilePath =
     private FilePath of string
 
 type FileUsage =
-    private { path: FilePath
-              size: SizeOnDisk }
+    { path: FilePath
+      size: SizeOnDisk }
 
 type FolderUsage =
-    private { path: FolderPath
-              size: SizeOnDisk
-              subFiles: FileUsage list
-              subFolders: FolderUsage list }
+    { path: FolderPath
+      size: SizeOnDisk
+      subFiles: FileUsage list
+      subFolders: FolderUsage list }
+
+[<RequireQualifiedAccess>]
+module FilePath =
+    let path (FilePath p) = p
 
 [<RequireQualifiedAccess>]
 module FileUsage =
@@ -69,7 +73,3 @@ module FolderUsage =
                      subFiles = subFiles
                      subFolders = subFolders }
         }
-
-    let size usage = usage.size
-
-    let path usage = usage.path

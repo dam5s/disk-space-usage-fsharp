@@ -1,10 +1,12 @@
 ﻿module DiskSpaceUsage.MainUI
 
 open Elmish
+open System.IO
 open Avalonia.Layout
 open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
+open Avalonia.FuncUI.Components
 
 open Icons
 open FolderPath
@@ -68,7 +70,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
 let private notLoadedView dispatch =
     Grid.create [
         Grid.columnDefinitions "50, *, 50"
-        Grid.rowDefinitions "*, 50, 50, *"
+        Grid.rowDefinitions "80, 50, 50, *, 80"
         Grid.children [
             TextBlock.create [
                 Grid.row 1
@@ -91,7 +93,7 @@ let private notLoadedView dispatch =
 let private loadingView folderPath dispatch =
     Grid.create [
         Grid.columnDefinitions "*"
-        Grid.rowDefinitions "*, 50, 50, *"
+        Grid.rowDefinitions "80, 50, 50, *, 80"
         Grid.children [
             TextBlock.create [
                 Grid.row 1
@@ -110,20 +112,95 @@ let private loadingView folderPath dispatch =
         ]
     ]
 
-let private loadedView usage dispatch =
-    let fullPath =
-        usage
-        |> FolderUsage.path
-        |> FolderPath.path
+type GraphRow =
+    { percentage: float
+      name: string
+      size: string }
 
-    let sizeText =
-        usage
-        |> FolderUsage.size
-        |> FolderSizeView.text
+module private GraphRow =
+    let fileName (fullPath: string) =
+        fullPath.Split(Path.DirectorySeparatorChar)
+        |> Array.tryLast
+        |> Option.defaultValue fullPath
+
+    let private create name (Bytes size) (Bytes parentSize) =
+        { percentage = float size / float parentSize
+          name = name
+          size = FolderSizeView.text (Bytes size) }
+
+    let ofFolder (parent: FolderUsage) (folder: FolderUsage) =
+        create
+            (folder.path |> FolderPath.path |> fileName)
+            folder.size
+            parent.size
+
+    let ofFile (parent: FolderUsage) (file: FileUsage) =
+        create
+            (file.path |> FilePath.path |> fileName)
+            file.size
+            parent.size
+
+let private equalSize count =
+    "*"
+    |> List.replicate count
+    |> String.concat ","
+
+let private sortedRows parent =
+    let fileCells = parent.subFiles |> List.map (GraphRow.ofFile parent)
+    let folderCells = parent.subFolders |> List.map (GraphRow.ofFolder parent)
+
+    fileCells @ folderCells
+    |> List.sortBy (fun c -> - c.percentage)
+
+let private rowView (row: GraphRow) =
+    let colSpan = 100.0 * row.percentage
+                  |> int
+                  |> max 1
+                  |> min 100
+    let content =
+        Grid.create [
+            Grid.rowDefinitions "*"
+            Grid.columnDefinitions (equalSize 100)
+            Grid.height 30.0
+            Grid.children [
+                DockPanel.create [
+                    Grid.row 0
+                    Grid.column 0
+                    Grid.columnSpan colSpan
+                    DockPanel.background "#339999ff"
+                ]
+                TextBlock.create [
+                    Grid.row 0
+                    Grid.column 1
+                    Grid.columnSpan 98
+                    TextBlock.verticalAlignment VerticalAlignment.Center
+                    TextBlock.textAlignment TextAlignment.Left
+                    TextBlock.text row.name
+                ]
+                TextBlock.create [
+                    Grid.row 0
+                    Grid.column 1
+                    Grid.columnSpan 98
+                    TextBlock.verticalAlignment VerticalAlignment.Center
+                    TextBlock.textAlignment TextAlignment.Right
+                    TextBlock.text row.size
+                ]
+            ]
+        ]
+
+    Border.create [
+        Border.borderBrush "#ffffff"
+        Border.borderThickness (0.0, 0.0, 0.0, 1.0)
+        Border.child content
+    ]
+
+let private loadedView folder dispatch =
+    let fullPath = FolderPath.path folder.path
+    let sizeText = FolderSizeView.text folder.size
 
     Grid.create [
         Grid.columnDefinitions "*"
-        Grid.rowDefinitions "80, *, 50, 50, *, 80"
+        Grid.rowDefinitions "80, 50, 50, *, 80"
         Grid.children [
             Button.create [
                 Grid.row 0
@@ -136,18 +213,26 @@ let private loadedView usage dispatch =
                 Button.onClick (fun _ -> dispatch CloseFolder)
             ]
             TextBlock.create [
-                Grid.row 2
+                Grid.row 1
+
                 TextBlock.verticalAlignment VerticalAlignment.Bottom
                 TextBlock.textAlignment TextAlignment.Center
                 TextBlock.fontSize 48.0
                 TextBlock.text sizeText
             ]
             TextBlock.create [
-                Grid.row 3
+                Grid.row 2
+
                 TextBlock.verticalAlignment VerticalAlignment.Top
                 TextBlock.textAlignment TextAlignment.Center
                 TextBlock.fontSize 24.0
                 TextBlock.text fullPath
+            ]
+            ItemsControl.create [
+                Grid.row 3
+
+                ItemsControl.dataItems (sortedRows folder)
+                ItemsControl.itemTemplate (DataTemplateView<GraphRow>.create(rowView))
             ]
         ]
     ]
