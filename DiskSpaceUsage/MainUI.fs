@@ -37,6 +37,7 @@ type Msg =
     | FinishLoading of DiskItem
     | CloseFolder
     | NavigateToItem of DiskItem
+    | NavigateBack
 
 let private selectFolderAsync window =
     async {
@@ -65,6 +66,11 @@ let private asyncCmd = Cmd.OfAsync.result
 let private navigateToItem (diskItem: DiskItem) (nav: Navigation) =
     { nav with history = diskItem :: nav.history}
 
+let private navigateBack (nav: Navigation) =
+    match nav.history with
+    | _ :: tail -> { nav with history = tail }
+    | [] -> { nav with history = [] }
+
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | OpenFolderSelectDialog ->
@@ -79,6 +85,10 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | NavigateToItem diskItem ->
         match model.rootDiskItem with
         | Loaded nav -> { model with rootDiskItem = Loaded (navigateToItem diskItem nav) }, Cmd.none
+        | _ -> model, Cmd.none
+    | NavigateBack ->
+        match model.rootDiskItem with
+        | Loaded nav -> { model with rootDiskItem = Loaded (navigateBack nav) }, Cmd.none
         | _ -> model, Cmd.none
 
 let private notLoadedView dispatch =
@@ -226,9 +236,31 @@ let private topDiskItem nav =
     |> List.tryHead
     |> Option.defaultValue nav.root
 
+let private backButtonView dispatch =
+    let view = Button.create [
+        Grid.row 0
+
+        Button.verticalAlignment VerticalAlignment.Center
+        Button.horizontalAlignment HorizontalAlignment.Left
+        Button.margin 20.0
+        Button.content Icons.arrowLeftCircle
+        Button.classes ["icon"]
+        Button.onClick (fun _ -> dispatch NavigateBack)
+    ]
+    view :> IView
+
+let private emptyView =
+    let view = TextBlock.create [ Grid.row 0 ]
+    view :> IView
+
 let private loadedView (nav: Navigation) dispatch =
     let topItem = topDiskItem nav
     let sizeText = SizeView.text topItem.size
+
+    let backButton =
+        if List.isEmpty nav.history
+        then emptyView
+        else backButtonView dispatch
 
     Grid.create [
         Grid.columnDefinitions "*"
@@ -260,6 +292,7 @@ let private loadedView (nav: Navigation) dispatch =
                 TextBlock.fontSize 24.0
                 TextBlock.text topItem.name
             ]
+            backButton
             itemView topItem dispatch
         ]
     ]
