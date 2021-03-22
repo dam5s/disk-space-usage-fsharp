@@ -1,10 +1,12 @@
 ﻿module DiskSpaceUsage.DiskItem
 
 open System.IO
+open DiskSpaceUsage
 open FolderPath
 
 type SizeOnDisk =
-    Bytes of int64
+    | Bytes of int64
+    | Unknown
 
 type DiskItem =
     { name: string
@@ -14,28 +16,58 @@ and DiskItemType =
     | File
     | Folder of {| path: FolderPath; children: DiskItem list |}
 
+type private SystemDir =
+    | Readable of ReadableRecord
+    | Unreadable of UnreadableRecord
+and private ReadableRecord =
+    { name: string; files: FileInfo[]; dirs: DirectoryInfo[] }
+and private UnreadableRecord =
+    { name: string }
+
 [<RequireQualifiedAccess>]
-module DiskItem =
+module private SystemDir =
+    let load folderPath =
+        let dir = folderPath
+                  |> FolderPath.path
+                  |> DirectoryInfo
+        try
+            Readable { name = dir.Name
+                       files = dir.GetFiles()
+                       dirs = dir.GetDirectories() }
+        with _ ->
+            Unreadable { name = dir.Name }
+
+[<RequireQualifiedAccess>]
+module rec DiskItem =
     let sizeInBytes (item: DiskItem) =
         match item.size with
-        | Bytes bytes -> bytes
+        | Bytes bytes -> Some bytes
+        | Unknown -> None
 
     let private createFile (fileInfo: FileInfo) =
         { name = fileInfo.Name
           size = Bytes fileInfo.Length
           itemType = File }
 
-    let rec loadAsync folderPath: Async<DiskItem> =
+    let private loadUnreadableRecord folderPath record: Async<DiskItem> =
         async {
-            let dir = DirectoryInfo (FolderPath.path folderPath)
+            let itemType =
+                Folder {| path = folderPath; children = [] |}
+            return
+                { name = record.name
+                  size = Unknown
+                  itemType = itemType }
+        }
 
+    let private loadReadableRecord folderPath record: Async<DiskItem> =
+        async {
             let mutable children =
-                dir.GetFiles()
+                record.files
                 |> Array.toList
                 |> List.map createFile
 
             let subFolderPaths =
-                dir.GetDirectories()
+                record.dirs
                 |> Array.choose (fun d -> FolderPath.create d.FullName)
 
             for subFolderPath in subFolderPaths do
@@ -44,10 +76,20 @@ module DiskItem =
 
             let size =
                 children
-                |> List.map sizeInBytes
+                |> List.choose sizeInBytes
                 |> List.sum
 
-            return { name = dir.Name
+            return { name = record.name
                      size = Bytes size
                      itemType = Folder {| path = folderPath; children = children |} }
+        }
+
+    let loadAsync folderPath: Async<DiskItem> =
+        async {
+            let asyncDiskItem =
+                match SystemDir.load folderPath with
+                | Unreadable record -> loadUnreadableRecord folderPath record
+                | Readable record -> loadReadableRecord folderPath record
+
+            return! asyncDiskItem
         }

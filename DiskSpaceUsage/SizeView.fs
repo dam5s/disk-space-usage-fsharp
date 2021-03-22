@@ -4,21 +4,24 @@ open DiskItem
 
 [<RequireQualifiedAccess>]
 module SizeView =
-    let private tryUnit bytesPerUnit bytes =
-        let floatBytes = float bytes
+    let private tryUnit bytesPerUnit size =
+        match size with
+        | Unknown -> None
+        | Bytes bytes ->
+            let floatBytes = float bytes
 
-        if floatBytes > bytesPerUnit
-        then Some (floatBytes / bytesPerUnit)
-        else None
+            if floatBytes > bytesPerUnit
+            then Some (floatBytes / bytesPerUnit)
+            else None
 
-    let private (|Gigabytes|_|) (Bytes bytes) =
-        tryUnit (1024.0 ** 3.0) bytes
+    let private (|Gigabytes|_|) size =
+        tryUnit (1024.0 ** 3.0) size
 
-    let private (|Megabytes|_|) (Bytes bytes) =
-        tryUnit (1024.0 ** 2.0) bytes
+    let private (|Megabytes|_|) size =
+        tryUnit (1024.0 ** 2.0) size
 
-    let private (|Kilobytes|_|) (Bytes bytes) =
-        tryUnit 1024.0 bytes
+    let private (|Kilobytes|_|) size =
+        tryUnit 1024.0 size
 
     let text size =
         match size with
@@ -26,3 +29,4 @@ module SizeView =
         | Megabytes value -> $"%.1f{value} MB"
         | Kilobytes value -> $"%.1f{value} KB"
         | Bytes value -> $"%d{value} B"
+        | Unknown -> "Unknown"

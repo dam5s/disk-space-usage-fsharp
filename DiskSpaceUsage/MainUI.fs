@@ -40,11 +40,13 @@ type Msg =
     | NavigateBack
 
 let private selectFolderAsync window =
-    async {
-        let dialog = OpenFolderDialog ()
-        dialog.Title <- "Select Folder"
+    let dialog = OpenFolderDialog ()
+    dialog.Title <- "Select Folder"
 
-        let! folderPath = dialog.ShowAsync(window) |> Async.AwaitTask
+    let dialogTask = dialog.ShowAsync(window)
+
+    async {
+        let! folderPath = dialogTask |> Async.AwaitTask
 
         let msg =
             folderPath
@@ -138,7 +140,7 @@ let private loadingView folderPath dispatch =
 
 type GraphRow =
     { item: DiskItem
-      percentage: float
+      percentage: float option
       name: string
       size: string }
 
@@ -151,9 +153,12 @@ module private GraphRow =
     let create (parent: DiskItem) (diskItem: DiskItem) =
         let bytes = DiskItem.sizeInBytes diskItem
         let parentBytes = DiskItem.sizeInBytes parent
+        let percentage =
+            (bytes, parentBytes)
+            ||> Option.map2 (fun b p -> float b / float p)
 
         { item = diskItem
-          percentage = float bytes / float parentBytes
+          percentage = percentage
           name = diskItem.name
           size = SizeView.text diskItem.size }
 
@@ -165,25 +170,37 @@ let private equalSize count =
 let private sortedRows diskItem children dispatch =
     children
     |> List.map (GraphRow.create diskItem)
-    |> List.sortBy (fun c -> - c.percentage)
+    |> List.sortByDescending (fun c -> c.percentage |> Option.defaultValue 0.0)
 
 let private rowView (row: GraphRow) (dispatch: Dispatch<Msg>) =
-    let colSpan = 100.0 * row.percentage
-                  |> int
-                  |> max 1
-                  |> min 100
+    let rowPercentage =
+        row.percentage
+        |> Option.defaultValue 0.0
+
+    let colSpan =
+        100.0 * rowPercentage
+        |> int
+        |> max 1
+        |> min 100
+
+    let barColor =
+        if rowPercentage > 0.0
+        then "#339999ff"
+        else "#00000000"
+
     let content =
         Grid.create [
             Grid.rowDefinitions "*"
             Grid.columnDefinitions (equalSize 100)
             Grid.height 30.0
             Grid.onDoubleTapped (fun _ -> NavigateToItem row.item |> dispatch)
+            Grid.background "#282828"
             Grid.children [
                 DockPanel.create [
                     Grid.row 0
                     Grid.column 0
                     Grid.columnSpan colSpan
-                    DockPanel.background "#339999ff"
+                    DockPanel.background barColor
                 ]
                 TextBlock.create [
                     Grid.row 0
