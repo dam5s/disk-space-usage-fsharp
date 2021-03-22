@@ -14,24 +14,29 @@ open FolderPath
 open DiskItem
 open SizeView
 
-type AsyncFolderUsage =
+type Navigation =
+    { root: DiskItem
+      history: DiskItem list }
+
+type AsyncDiskItem =
     | NotLoaded
     | Loading of FolderPath
-    | Loaded of DiskItem
+    | Loaded of Navigation
 
 type Model =
     { window: Window
-      folderUsage : AsyncFolderUsage }
+      rootDiskItem : AsyncDiskItem }
 
 let init window _ =
     { window = window
-      folderUsage = NotLoaded }, Cmd.none
+      rootDiskItem = NotLoaded }, Cmd.none
 
 type Msg =
     | OpenFolderSelectDialog
     | SelectFolder of FolderPath
     | FinishLoading of DiskItem
     | CloseFolder
+    | NavigateToItem of DiskItem
 
 let private selectFolderAsync window =
     async {
@@ -57,16 +62,24 @@ let private loadFolderUsageAsync path =
 
 let private asyncCmd = Cmd.OfAsync.result
 
+let private navigateToItem (diskItem: DiskItem) (nav: Navigation) =
+    { nav with history = diskItem :: nav.history}
+
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | OpenFolderSelectDialog ->
         model, asyncCmd (selectFolderAsync model.window)
     | SelectFolder path ->
-        { model with folderUsage = Loading path }, asyncCmd (loadFolderUsageAsync path)
-    | FinishLoading usage ->
-        { model with folderUsage = Loaded usage }, Cmd.none
+        { model with rootDiskItem = Loading path }, asyncCmd (loadFolderUsageAsync path)
+    | FinishLoading diskItem ->
+        let nav = { root = diskItem; history = [] }
+        { model with rootDiskItem = Loaded nav }, Cmd.none
     | CloseFolder ->
-        { model with folderUsage = NotLoaded }, Cmd.none
+        { model with rootDiskItem = NotLoaded }, Cmd.none
+    | NavigateToItem diskItem ->
+        match model.rootDiskItem with
+        | Loaded nav -> { model with rootDiskItem = Loaded (navigateToItem diskItem nav) }, Cmd.none
+        | _ -> model, Cmd.none
 
 let private notLoadedView dispatch =
     Grid.create [
@@ -114,7 +127,8 @@ let private loadingView folderPath dispatch =
     ]
 
 type GraphRow =
-    { percentage: float
+    { item: DiskItem
+      percentage: float
       name: string
       size: string }
 
@@ -128,7 +142,8 @@ module private GraphRow =
         let bytes = DiskItem.sizeInBytes diskItem
         let parentBytes = DiskItem.sizeInBytes parent
 
-        { percentage = float bytes / float parentBytes
+        { item = diskItem
+          percentage = float bytes / float parentBytes
           name = diskItem.name
           size = SizeView.text diskItem.size }
 
@@ -142,7 +157,7 @@ let private sortedRows diskItem children dispatch =
     |> List.map (GraphRow.create diskItem)
     |> List.sortBy (fun c -> - c.percentage)
 
-let private rowView (row: GraphRow) =
+let private rowView (row: GraphRow) (dispatch: Dispatch<Msg>) =
     let colSpan = 100.0 * row.percentage
                   |> int
                   |> max 1
@@ -152,6 +167,7 @@ let private rowView (row: GraphRow) =
             Grid.rowDefinitions "*"
             Grid.columnDefinitions (equalSize 100)
             Grid.height 30.0
+            Grid.onDoubleTapped (fun _ -> NavigateToItem row.item |> dispatch)
             Grid.children [
                 DockPanel.create [
                     Grid.row 0
@@ -185,11 +201,11 @@ let private rowView (row: GraphRow) =
     ]
 
 let private folderView diskItem children dispatch =
-    let view = ItemsControl.create [
+    let view = ListBox.create [
         Grid.row 3
 
-        ItemsControl.dataItems (sortedRows diskItem children dispatch)
-        ItemsControl.itemTemplate (DataTemplateView<GraphRow>.create(rowView))
+        ListBox.dataItems (sortedRows diskItem children dispatch)
+        ListBox.itemTemplate (DataTemplateView<GraphRow>.create(fun row -> rowView row dispatch))
     ]
     view :> IView
 
@@ -203,10 +219,16 @@ let private fileView diskItem dispatch =
 let private itemView (diskItem: DiskItem) dispatch =
     match diskItem.itemType with
     | File -> fileView diskItem dispatch
-    | Folder attributes -> folderView diskItem attributes.children dispatch
+    | Folder attrs -> folderView diskItem attrs.children dispatch
 
-let private loadedView (diskItem: DiskItem) dispatch =
-    let sizeText = SizeView.text diskItem.size
+let private topDiskItem nav =
+    nav.history
+    |> List.tryHead
+    |> Option.defaultValue nav.root
+
+let private loadedView (nav: Navigation) dispatch =
+    let topItem = topDiskItem nav
+    let sizeText = SizeView.text topItem.size
 
     Grid.create [
         Grid.columnDefinitions "*"
@@ -236,14 +258,14 @@ let private loadedView (diskItem: DiskItem) dispatch =
                 TextBlock.verticalAlignment VerticalAlignment.Top
                 TextBlock.textAlignment TextAlignment.Center
                 TextBlock.fontSize 24.0
-                TextBlock.text diskItem.name
+                TextBlock.text topItem.name
             ]
-            itemView diskItem dispatch
+            itemView topItem dispatch
         ]
     ]
 
 let view (model: Model) (dispatch: Dispatch<Msg>) =
-    match model.folderUsage with
+    match model.rootDiskItem with
     | NotLoaded -> notLoadedView dispatch
     | Loading path -> loadingView path dispatch
-    | Loaded diskItem -> loadedView diskItem dispatch
+    | Loaded nav -> loadedView nav dispatch
