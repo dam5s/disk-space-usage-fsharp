@@ -170,7 +170,7 @@ let private equalSize count =
 let private sortedRows diskItem children dispatch =
     children
     |> List.map (GraphRow.create diskItem)
-    |> List.sortByDescending (fun c -> c.percentage |> Option.defaultValue 0.0)
+    |> List.sortByDescending (fun c -> c.percentage |> Option.defaultValue -1.0)
 
 let private rowView (row: GraphRow) (dispatch: Dispatch<Msg>) =
     let rowPercentage =
