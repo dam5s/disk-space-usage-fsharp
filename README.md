@@ -11,7 +11,7 @@ It runs cross-platform (on Windows, Linux and Mac OS) using **.NET 5**.
 ## Local Setup
 
 ### Dependencies
-1. .NET 5
+.NET 5
 
 ### Running the build
 
