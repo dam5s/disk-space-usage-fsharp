@@ -14,7 +14,9 @@ type MainWindow() as this =
         base.Width <- 600.0
         base.Height <- 400.0
 
-        Elmish.Program.mkProgram (MainUI.init this) MainUI.update MainUI.view
+        ((MainUI.init this), MainUI.update, MainUI.view)
+        |||> Elmish.Program.mkProgram
+        |> Program.withSubscription MainUI.subscribe
         |> Program.withHost this
         |> Program.run
 

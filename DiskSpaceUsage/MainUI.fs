@@ -9,6 +9,7 @@ open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open Avalonia.FuncUI.Components
 
+open Time
 open Icons
 open FolderPath
 open DiskItem
@@ -34,10 +35,32 @@ let init window _ =
 type Msg =
     | OpenFolderSelectDialog
     | SelectFolder of FolderPath
+    | NowLoading of FolderPath
     | FinishLoading of DiskItem
     | CloseFolder
     | NavigateToItem of DiskItem
     | NavigateBack
+
+module private Subscriptions =
+    let mutable private dispatch = fun _ -> ()
+    let mutable private lastNotify = Posix.now()
+
+    let registerDispatch d =
+        dispatch <- d
+
+    let notifyLoading folderPath =
+        let now = Posix.now()
+        let msSinceLastNotify = Posix.milliseconds now - Posix.milliseconds lastNotify
+
+        if msSinceLastNotify > int64 100
+        then
+            lastNotify <- now
+            dispatch (NowLoading folderPath)
+        else
+            ()
+
+let subscribe model: Cmd<Msg> =
+    Cmd.ofSub Subscriptions.registerDispatch
 
 let private selectFolderAsync window =
     let dialog = OpenFolderDialog ()
@@ -59,7 +82,7 @@ let private selectFolderAsync window =
 
 let private loadFolderUsageAsync path =
     async {
-        let! usage = DiskItem.loadAsync path
+        let! usage = DiskItem.loadAsync Subscriptions.notifyLoading path
         return FinishLoading usage
     }
 
@@ -79,6 +102,8 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         model, asyncCmd (selectFolderAsync model.window)
     | SelectFolder path ->
         { model with rootDiskItem = Loading path }, asyncCmd (loadFolderUsageAsync path)
+    | NowLoading path ->
+        { model with rootDiskItem = Loading path }, Cmd.none
     | FinishLoading diskItem ->
         let nav = { root = diskItem; history = [] }
         { model with rootDiskItem = Loaded nav }, Cmd.none

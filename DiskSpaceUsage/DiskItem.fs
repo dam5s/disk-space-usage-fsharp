@@ -59,7 +59,7 @@ module rec DiskItem =
                   itemType = itemType }
         }
 
-    let private loadReadableRecord folderPath record: Async<DiskItem> =
+    let private loadReadableRecord notify folderPath record: Async<DiskItem> =
         async {
             let mutable children =
                 record.files
@@ -71,7 +71,7 @@ module rec DiskItem =
                 |> Array.choose (fun d -> FolderPath.create d.FullName)
 
             for subFolderPath in subFolderPaths do
-                let! subFolder = loadAsync subFolderPath
+                let! subFolder = loadAsync notify subFolderPath
                 children <- subFolder :: children
 
             let size =
@@ -84,12 +84,14 @@ module rec DiskItem =
                      itemType = Folder {| path = folderPath; children = children |} }
         }
 
-    let loadAsync folderPath: Async<DiskItem> =
+    let loadAsync (notify: FolderPath -> unit) folderPath: Async<DiskItem> =
         async {
+            notify folderPath
+
             let asyncDiskItem =
                 match SystemDir.load folderPath with
                 | Unreadable record -> loadUnreadableRecord folderPath record
-                | Readable record -> loadReadableRecord folderPath record
+                | Readable record -> loadReadableRecord notify folderPath record
 
             return! asyncDiskItem
         }
