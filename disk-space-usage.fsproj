@@ -12,6 +12,7 @@
     <Compile Include="DiskSpaceUsage/DiskItem.fs" />
     <Compile Include="DiskSpaceUsage/SizeView.fs" />
     <Compile Include="DiskSpaceUsage/Icons.fs" />
+    <Compile Include="DiskSpaceUsage/Widgets.fs" />
     <Compile Include="DiskSpaceUsage/MainUI.fs" />
     <Compile Include="DiskSpaceUsage/Program.fs" />
   </ItemGroup>

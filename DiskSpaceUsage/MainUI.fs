@@ -11,6 +11,7 @@ open Avalonia.FuncUI.Components
 
 open Time
 open Icons
+open Widgets
 open FolderPath
 open DiskItem
 open SizeView
@@ -119,46 +120,30 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         | _ -> model, Cmd.none
 
 let private notLoadedView dispatch =
-    Grid.create [
-        Grid.columnDefinitions "50, *, 50"
-        Grid.rowDefinitions "80, 50, 50, *, 80"
+    Grid.main [
         Grid.children [
-            TextBlock.create [
+            TextBlock.subTitle "No folder selected" [
                 Grid.row 1
-                Grid.column 1
                 TextBlock.verticalAlignment VerticalAlignment.Bottom
-                TextBlock.textAlignment TextAlignment.Center
-                TextBlock.fontSize 24.0
-                TextBlock.text "No folder selected"
             ]
             Button.create [
                 Grid.row 2
-                Grid.column 1
                 Button.height 50.0
                 Button.onClick (fun _ -> dispatch OpenFolderSelectDialog)
                 Button.content "Select Folder"
+                Button.margin (50.0, 0.0)
             ]
         ]
     ]
 
 let private loadingView folderPath dispatch =
-    Grid.create [
-        Grid.columnDefinitions "*"
-        Grid.rowDefinitions "80, 50, 50, *, 80"
+    Grid.main [
         Grid.children [
-            TextBlock.create [
+            TextBlock.title "Loading..." [
                 Grid.row 1
-                TextBlock.verticalAlignment VerticalAlignment.Bottom
-                TextBlock.textAlignment TextAlignment.Center
-                TextBlock.fontSize 48.0
-                TextBlock.text "Loading..."
             ]
-            TextBlock.create [
+            TextBlock.subTitle (FolderPath.path folderPath) [
                 Grid.row 2
-                TextBlock.verticalAlignment VerticalAlignment.Top
-                TextBlock.textAlignment TextAlignment.Center
-                TextBlock.fontSize 24.0
-                TextBlock.text (FolderPath.path folderPath)
             ]
         ]
     ]
@@ -262,11 +247,10 @@ let private folderView diskItem children dispatch =
     view :> IView
 
 let private fileView diskItem dispatch =
-    let view = TextBlock.create [
+    TextBlock.create [
         Grid.row 3
         TextBlock.text "file"
-    ]
-    view :> IView
+    ] :> IView
 
 let private itemView (diskItem: DiskItem) dispatch =
     match diskItem.itemType with
@@ -279,21 +263,14 @@ let private topDiskItem nav =
     |> Option.defaultValue nav.root
 
 let private backButtonView dispatch =
-    let view = Button.create [
+    Button.icon Icons.arrowLeftCircle [
         Grid.row 0
-
-        Button.verticalAlignment VerticalAlignment.Center
         Button.horizontalAlignment HorizontalAlignment.Left
-        Button.margin 20.0
-        Button.content Icons.arrowLeftCircle
-        Button.classes ["icon"]
         Button.onClick (fun _ -> dispatch NavigateBack)
     ]
-    view :> IView
 
 let private emptyView =
-    let view = TextBlock.create [ Grid.row 0 ]
-    view :> IView
+    TextBlock.create [ Grid.row 0 ] :> IView
 
 let private loadedView (nav: Navigation) dispatch =
     let topItem = topDiskItem nav
@@ -304,35 +281,18 @@ let private loadedView (nav: Navigation) dispatch =
         then emptyView
         else backButtonView dispatch
 
-    Grid.create [
-        Grid.columnDefinitions "*"
-        Grid.rowDefinitions "80, 50, 50, *, 80"
+    Grid.main [
         Grid.children [
-            Button.create [
+            Button.icon Icons.closeCircle [
                 Grid.row 0
-
-                Button.verticalAlignment VerticalAlignment.Center
                 Button.horizontalAlignment HorizontalAlignment.Right
-                Button.margin 20.0
-                Button.content Icons.closeCircle
-                Button.classes ["icon"]
                 Button.onClick (fun _ -> dispatch CloseFolder)
             ]
-            TextBlock.create [
+            TextBlock.title sizeText [
                 Grid.row 1
-
-                TextBlock.verticalAlignment VerticalAlignment.Bottom
-                TextBlock.textAlignment TextAlignment.Center
-                TextBlock.fontSize 48.0
-                TextBlock.text sizeText
             ]
-            TextBlock.create [
+            TextBlock.subTitle topItem.name [
                 Grid.row 2
-
-                TextBlock.verticalAlignment VerticalAlignment.Top
-                TextBlock.textAlignment TextAlignment.Center
-                TextBlock.fontSize 24.0
-                TextBlock.text topItem.name
             ]
             backButton
             itemView topItem dispatch
