@@ -1,20 +1,46 @@
-﻿module DiskSpaceUsage.Widgets
+﻿module DiskSpaceUsage.Styles
 
+open Avalonia
 open Avalonia.Layout
 open Avalonia.Media
 open Avalonia.Controls
+open Avalonia.Controls.Presenters
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
-open Avalonia.FuncUI.Components
+open Avalonia.Styling
+
+[<RequireQualifiedAccess>]
+module Styles =
+    let create selector (setters: Setter list) =
+        let style = Style(fun s -> selector s)
+        for setter in setters do
+            style.Setters.Add setter
+
+        let styles = Styles()
+        styles.Add style
+        styles
+
+    let cornerRadius value =
+        Setter(ContentPresenter.CornerRadiusProperty, CornerRadius(value))
 
 [<RequireQualifiedAccess>]
 module Button =
     let icon (content: IView) attrs: IView =
+        let selector (s: Selector) =
+            s.OfType<Button>().Template().OfType<ContentPresenter>()
+
+        let styles = Styles.create selector [
+            Styles.cornerRadius 25.0
+        ]
+
         let defaults = [
             Button.verticalAlignment VerticalAlignment.Center
+            Button.background "transparent"
             Button.margin 20.0
+            Button.width 40.0
+            Button.height 40.0
             Button.content content
-            Button.classes ["icon"]
+            Button.styles styles
         ]
         Button.create (defaults @ attrs) :> IView
 

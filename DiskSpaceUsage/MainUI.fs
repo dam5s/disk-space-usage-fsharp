@@ -11,7 +11,7 @@ open Avalonia.FuncUI.Components
 
 open Time
 open Icons
-open Widgets
+open Styles
 open FolderPath
 open DiskItem
 open SizeView
