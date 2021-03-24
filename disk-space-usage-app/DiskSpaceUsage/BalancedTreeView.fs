@@ -27,10 +27,15 @@ module rec BalancedTreeView =
 
     type Size = { width: double; height: double }
     type Offset = { top: double; left: double }
+    type Config =
+        { children: DiskItem list
+          size: Size
+          onItemSelected: DiskItem -> unit }
 
     let private leafPadding = 2.0
 
-    let private leafView (depth: int) leaf size: IView list =
+    let private leafView (depth: int) leaf (config: Config): IView list =
+        let size = config.size
         let labelOffset = { top = leafPadding; left = leafPadding }
         let insetSize = { width = size.width - leafPadding * 2.0; height = size.height - leafPadding * 2.0 }
         let textSize = { width = insetSize.width; height = 15.0 }
@@ -45,6 +50,7 @@ module rec BalancedTreeView =
                                TextBlock.width (insetSize.width - estimatedMaxSizeViewWidth)
                                TextBlock.height textSize.height
                                TextBlock.textTrimming TextTrimming.CharacterEllipsis
+                               TextBlock.onDoubleTapped (fun _ -> config.onItemSelected leaf.data)
                                TextBlock.text leaf.data.name ]
 
         let sizeView =
@@ -74,15 +80,17 @@ module rec BalancedTreeView =
                     let childrenOffset = { top = childrenInset; left = childrenInset }
                     let childrenSize = { width = insetSize.width - childrenInset * 2.0
                                          height = insetSize.height - textSize.height - childrenInset * 2.0 }
+                    let childrenConfig = { config with size = childrenSize; children = attrs.children }
 
-                    [ createWithDepth (depth + 1) attrs.children childrenSize [
+                    [ createWithDepth (depth + 1) childrenConfig [
                         Canvas.top childrenOffset.top
                         Canvas.left childrenOffset.left
                     ] ]
 
         [ labelView; sizeView; rectangleView childrenViews ]
 
-    let branchView depth (branch: Branch<DiskItem>) size: IView list =
+    let branchView depth (branch: Branch<DiskItem>) (config: Config): IView list =
+        let size = config.size
         let leftWeight = BalancedTree.weight branch.left |> double
         let rightWeight = BalancedTree.weight branch.right |> double
         let leftRatio = leftWeight / (leftWeight + rightWeight)
@@ -105,29 +113,29 @@ module rec BalancedTreeView =
               Canvas.left 0.0
               Canvas.width leftSize.width
               Canvas.height leftSize.height
-              Canvas.children (createTree depth branch.left leftSize) ]
+              Canvas.children (createTree depth branch.left { config with size = leftSize }) ]
           Canvas.create [
               Canvas.top rightOffset.top
               Canvas.left rightOffset.left
               Canvas.width rightSize.width
               Canvas.height rightSize.height
-              Canvas.children (createTree depth branch.right rightSize) ] ]
+              Canvas.children (createTree depth branch.right { config with size = rightSize }) ] ]
 
     let private minSize = { width = 75.0; height = 25.0 }
 
-    let private createTree (depth: int) (tree: TreeNode<DiskItem>) (size: Size): IView list =
-        if size.width >= minSize.width && size.height >= minSize.height
+    let private createTree (depth: int) (tree: TreeNode<DiskItem>) (config: Config): IView list =
+        if config.size.width >= minSize.width && config.size.height >= minSize.height
             then
                 match tree with
-                | LeafNode leaf -> leafView depth leaf size
-                | BranchNode branch -> branchView depth branch size
+                | LeafNode leaf -> leafView depth leaf config
+                | BranchNode branch -> branchView depth branch config
             else
                 let view =
                     Canvas.create [ Canvas.background (Backgrounds.next ())
                                     Canvas.top leafPadding
                                     Canvas.left leafPadding
-                                    Canvas.width (size.width - leafPadding * 2.0)
-                                    Canvas.height (size.height - leafPadding * 2.0) ]
+                                    Canvas.width (config.size.width - leafPadding * 2.0)
+                                    Canvas.height (config.size.height - leafPadding * 2.0) ]
                 [ view ]
 
     let private toLeaf diskItem =
@@ -135,9 +143,9 @@ module rec BalancedTreeView =
         |> DiskItem.sizeInBytes
         |> Option.map (fun size -> { data = diskItem; weight = size })
 
-    let createWithDepth depth children initialSize attrs: IView =
+    let createWithDepth depth config attrs: IView =
         let leaves =
-            children
+            config.children
             |> List.choose toLeaf
             |> List.filter (fun leaf -> leaf.weight > int64 0)
 
@@ -145,16 +153,16 @@ module rec BalancedTreeView =
             leaves
             |> BalancedTree.create
             |> Option.map BalancedTree.root
-            |> Option.map (fun root -> createTree depth root initialSize)
+            |> Option.map (fun root -> createTree depth root config)
             |> Option.defaultValue []
 
-        let defaults = [ Canvas.width initialSize.width
-                         Canvas.height initialSize.height
+        let defaults = [ Canvas.width config.size.width
+                         Canvas.height config.size.height
                          Canvas.children childViews
                          Canvas.background "#111" ]
 
         Canvas.create (defaults @ attrs) :> IView
 
-    let create (children: DiskItem list) initialSize attrs: IView =
+    let create config attrs: IView =
         Backgrounds.reset ()
-        createWithDepth 0 children initialSize attrs
+        createWithDepth 0 config attrs

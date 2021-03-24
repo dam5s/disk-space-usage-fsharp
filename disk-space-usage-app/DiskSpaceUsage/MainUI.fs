@@ -254,6 +254,11 @@ let private folderView model diskItem children dispatch =
         { width = windowBounds.Width / 2.0
           height = Grid.resizableRowHeight windowBounds.Height |> double }
 
+    let treeViewConfig: BalancedTreeView.Config =
+        { children = children
+          size = treeSize
+          onItemSelected = fun item -> NavigateToItem item |> dispatch }
+
     Grid.create [
         Grid.row 3
         Grid.rowDefinitions "*"
@@ -264,7 +269,7 @@ let private folderView model diskItem children dispatch =
                 ListBox.dataItems (sortedRows diskItem children dispatch)
                 ListBox.itemTemplate (DataTemplateView<GraphRow>.create(fun row -> rowView row dispatch))
             ]
-            BalancedTreeView.create children treeSize [
+            BalancedTreeView.create treeViewConfig [
                 Grid.column 1
             ]
         ]
