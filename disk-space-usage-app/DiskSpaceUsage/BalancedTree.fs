@@ -1,17 +1,17 @@
 module DiskSpaceUsage.BalancedTree
 
-type TreeNode =
-    | LeafNode of Leaf
-    | BranchNode of Branch
-and Leaf =
-    { name: string
+type TreeNode<'a> =
+    | LeafNode of Leaf<'a>
+    | BranchNode of Branch<'a>
+and Leaf<'a> =
+    { data: 'a
       weight: int64 }
-and Branch =
-    { left: TreeNode
-      right: TreeNode }
+and Branch<'a> =
+    { left: TreeNode<'a>
+      right: TreeNode<'a> }
 
-type BalancedTree =
-    private BalancedTree of root:TreeNode
+type BalancedTree<'a> =
+    private BalancedTree of root:TreeNode<'a>
 
 [<RequireQualifiedAccess>]
 module BalancedTree =
@@ -28,20 +28,20 @@ module BalancedTree =
         | LeafNode _ -> 1
         | BranchNode branch -> (leafCount branch.left) + (leafCount branch.right)
 
-    let create (leaves: Leaf list) =
-        let mutable sortedLeaves: TreeNode list =
+    let create (leaves: Leaf<'a> list) =
+        let mutable sortedLeaves: TreeNode<'a> list =
             leaves
             |> List.sortBy (fun l -> l.weight)
             |> List.map LeafNode
 
-        let mutable sortedTrees: TreeNode list = []
+        let mutable sortedTrees: TreeNode<'a> list = []
 
         let treeIsCompleted () =
             match sortedTrees with
             | [tree] -> leafCount tree = List.length leaves
             | _ -> false
 
-        let takeLightestTree (): TreeNode option =
+        let takeLightestTree (): TreeNode<'a> option =
             match sortedLeaves, sortedTrees with
             | leaf :: remainingLeaves, tree :: remainingTrees ->
                 if weight leaf < weight tree
@@ -63,7 +63,7 @@ module BalancedTree =
             | [], [] ->
                 None
 
-        let mutable left: TreeNode option = None
+        let mutable left: TreeNode<'a> option = None
 
         while not (treeIsCompleted ()) do
             let lightestTree = takeLightestTree ()

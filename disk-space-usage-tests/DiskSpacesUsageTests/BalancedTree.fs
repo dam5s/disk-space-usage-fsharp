@@ -5,13 +5,13 @@ open FsUnit
 
 open DiskSpaceUsage.BalancedTree
 
-let private leaf name weight = { name = name; weight = int64 weight }
-let private leafNode name weight = LeafNode (leaf name weight)
+let private leaf data weight = { data = data; weight = int64 weight }
+let private leafNode data weight = LeafNode (leaf data weight)
 let private branchNode left right = BranchNode { left = left; right = right }
 
 [<Test>]
 let ``building a simple balanced tree`` () =
-    let leaves: Leaf list = [
+    let leaves: Leaf<string> list = [
         leaf "File A" 9
         leaf "File C" 11
         leaf "File B" 10
