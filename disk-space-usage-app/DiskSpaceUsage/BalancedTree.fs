@@ -5,7 +5,7 @@ type TreeNode =
     | BranchNode of Branch
 and Leaf =
     { name: string
-      size: int64 }
+      weight: int64 }
 and Branch =
     { left: TreeNode
       right: TreeNode }
@@ -18,10 +18,10 @@ module BalancedTree =
 
     let root (BalancedTree root) = root
 
-    let rec private size tree =
+    let rec private weight tree =
         match tree with
-        | LeafNode leaf -> leaf.size
-        | BranchNode branch -> (size branch.left) + (size branch.right)
+        | LeafNode leaf -> leaf.weight
+        | BranchNode branch -> (weight branch.left) + (weight branch.right)
 
     let rec private leafCount tree =
         match tree with
@@ -31,20 +31,20 @@ module BalancedTree =
     let create (leaves: Leaf list) =
         let mutable sortedLeaves: TreeNode list =
             leaves
-            |> List.sortBy (fun l -> l.size)
+            |> List.sortBy (fun l -> l.weight)
             |> List.map LeafNode
 
         let mutable sortedTrees: TreeNode list = []
 
-        let finished () =
+        let treeIsCompleted () =
             match sortedTrees with
             | [tree] -> leafCount tree = List.length leaves
             | _ -> false
 
-        let findLightestTree (): TreeNode option =
+        let takeLightestTree (): TreeNode option =
             match sortedLeaves, sortedTrees with
             | leaf :: remainingLeaves, tree :: remainingTrees ->
-                if size leaf < size tree
+                if weight leaf < weight tree
                 then
                     sortedLeaves <- remainingLeaves
                     Some leaf
@@ -65,8 +65,8 @@ module BalancedTree =
 
         let mutable left: TreeNode option = None
 
-        while not (finished ()) do
-            let lightestTree = findLightestTree ()
+        while not (treeIsCompleted ()) do
+            let lightestTree = takeLightestTree ()
 
             match left, lightestTree with
             | None, Some _ ->
