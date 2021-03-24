@@ -1,10 +1,11 @@
 ﻿module DiskSpaceUsage.BalancedTreeView
 
+open Avalonia.Media
 open DiskSpaceUsage.BalancedTree
 open DiskSpaceUsage.DiskItem
 
 module private Backgrounds =
-    let private all = [ "#cc8888"; "#88cc88"; "#8888cc"; "#cccc88"; "#cc88cc"; "#88cccc" ]
+    let private all = [ "#724B5E"; "#9596A6"; "#316FA5"; "#263440"; "#F5ECDB" ]
     let mutable private cursor = 0
 
     let reset () =
@@ -17,7 +18,7 @@ module private Backgrounds =
         next
 
 [<RequireQualifiedAccess>]
-module BalancedTreeView =
+module rec BalancedTreeView =
     open Avalonia.Controls
     open Avalonia.FuncUI.DSL
     open Avalonia.FuncUI.Types
@@ -31,7 +32,7 @@ module BalancedTreeView =
         |> DiskItem.sizeInBytes
         |> Option.map (fun size -> { data = diskItem; weight = size })
 
-    let rec private createTree (tree: TreeNode<DiskItem>) (size: Size): IView list =
+    let private createTree (tree: TreeNode<DiskItem>) (size: Size): IView list =
         match tree with
         | LeafNode leaf ->
             let textHeight = 15.0
@@ -40,6 +41,7 @@ module BalancedTreeView =
                                  Canvas.left 2.0
                                  TextBlock.width (size.width - 4.0)
                                  TextBlock.height textHeight
+                                 TextBlock.textTrimming TextTrimming.CharacterEllipsis
                                  TextBlock.text leaf.data.name ]
               Canvas.create [ Canvas.background (Backgrounds.next ())
                               Canvas.top (textHeight + 4.0)
@@ -73,16 +75,32 @@ module BalancedTreeView =
                   Canvas.left 0.0
                   Canvas.width leftSize.width
                   Canvas.height leftSize.height
-                  Canvas.children (createTree branch.left leftSize)
+                  Canvas.children (tryCreateTree branch.left leftSize)
               ]
               Canvas.create [
                   Canvas.top rightTopOffset
                   Canvas.left rightLeftOffset
                   Canvas.width rightSize.width
                   Canvas.height rightSize.height
-                  Canvas.children (createTree branch.right rightSize)
+                  Canvas.children (tryCreateTree branch.right rightSize)
               ]
             ]
+
+    let private minSize =
+        { width = 75.0
+          height = 50.0 }
+
+    let private tryCreateTree (tree: TreeNode<DiskItem>) (size: Size): IView list =
+        if size.width >= minSize.width && size.height >= minSize.height
+            then createTree tree size
+            else
+                let view =
+                    Canvas.create [ Canvas.background (Backgrounds.next ())
+                                    Canvas.top 2.0
+                                    Canvas.left 2.0
+                                    Canvas.width (size.width - 4.0)
+                                    Canvas.height (size.height - 4.0) ]
+                [ view ]
 
     let create (children: DiskItem list) initialSize attrs: IView =
         Backgrounds.reset ()
@@ -96,7 +114,7 @@ module BalancedTreeView =
             leaves
             |> BalancedTree.create
             |> Option.map BalancedTree.root
-            |> Option.map (fun root -> createTree root initialSize)
+            |> Option.map (fun root -> tryCreateTree root initialSize)
             |> Option.defaultValue []
 
         let defaults = [
