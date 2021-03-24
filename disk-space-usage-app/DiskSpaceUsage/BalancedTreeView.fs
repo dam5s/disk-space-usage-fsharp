@@ -3,6 +3,7 @@
 open Avalonia.Media
 open DiskSpaceUsage.BalancedTree
 open DiskSpaceUsage.DiskItem
+open DiskSpaceUsage.SizeView
 
 module private Backgrounds =
     //https://color.adobe.com/Ninsurance%20Blue%202%20(big%20mtn%20moon%20dark)-color-theme-10409293
@@ -29,26 +30,59 @@ module rec BalancedTreeView =
 
     let private leafPadding = 2.0
 
-    let private leafView leaf size: IView list =
+    let private leafView (depth: int) leaf size: IView list =
         let labelOffset = { top = leafPadding; left = leafPadding }
         let insetSize = { width = size.width - leafPadding * 2.0; height = size.height - leafPadding * 2.0 }
         let textSize = { width = insetSize.width; height = 15.0 }
         let leafOffset = { top = textSize.height + leafPadding * 2.0; left = leafPadding }
         let leafSize = { width = insetSize.width; height = insetSize.height - textSize.height - leafPadding }
 
-        [ TextBlock.create [ Canvas.top labelOffset.top
-                             Canvas.left labelOffset.left
-                             TextBlock.width insetSize.width
-                             TextBlock.height textSize.height
-                             TextBlock.textTrimming TextTrimming.CharacterEllipsis
-                             TextBlock.text leaf.data.name ]
-          Canvas.create [ Canvas.background (Backgrounds.next ())
-                          Canvas.top leafOffset.top
-                          Canvas.left leafOffset.left
-                          Canvas.width leafSize.width
-                          Canvas.height leafSize.height ] ]
+        let estimatedMaxSizeViewWidth = 50.0
 
-    let branchView (branch: Branch<DiskItem>) size: IView list =
+        let labelView =
+            TextBlock.create [ Canvas.top labelOffset.top
+                               Canvas.left labelOffset.left
+                               TextBlock.width (insetSize.width - estimatedMaxSizeViewWidth)
+                               TextBlock.height textSize.height
+                               TextBlock.textTrimming TextTrimming.CharacterEllipsis
+                               TextBlock.text leaf.data.name ]
+
+        let sizeView =
+            TextBlock.create [ Canvas.top labelOffset.top
+                               Canvas.left labelOffset.left
+                               TextBlock.textAlignment TextAlignment.Right
+                               TextBlock.width insetSize.width
+                               TextBlock.height textSize.height
+                               TextBlock.text (SizeView.text leaf.data.size) ]
+
+        let rectangleView children =
+            Canvas.create [ Canvas.background (Backgrounds.next ())
+                            Canvas.top leafOffset.top
+                            Canvas.left leafOffset.left
+                            Canvas.width leafSize.width
+                            Canvas.height leafSize.height
+                            Canvas.children children ]
+
+        let childrenViews =
+            match leaf.data.itemType with
+            | File -> []
+            | Folder attrs ->
+                if depth >= 2
+                then []
+                else
+                    let childrenInset = 8.0
+                    let childrenOffset = { top = childrenInset; left = childrenInset }
+                    let childrenSize = { width = insetSize.width - childrenInset * 2.0
+                                         height = insetSize.height - textSize.height - childrenInset * 2.0 }
+
+                    [ createWithDepth (depth + 1) attrs.children childrenSize [
+                        Canvas.top childrenOffset.top
+                        Canvas.left childrenOffset.left
+                    ] ]
+
+        [ labelView; sizeView; rectangleView childrenViews ]
+
+    let branchView depth (branch: Branch<DiskItem>) size: IView list =
         let leftWeight = BalancedTree.weight branch.left |> double
         let rightWeight = BalancedTree.weight branch.right |> double
         let leftRatio = leftWeight / (leftWeight + rightWeight)
@@ -71,24 +105,22 @@ module rec BalancedTreeView =
               Canvas.left 0.0
               Canvas.width leftSize.width
               Canvas.height leftSize.height
-              Canvas.children (createTree branch.left leftSize) ]
+              Canvas.children (createTree depth branch.left leftSize) ]
           Canvas.create [
               Canvas.top rightOffset.top
               Canvas.left rightOffset.left
               Canvas.width rightSize.width
               Canvas.height rightSize.height
-              Canvas.children (createTree branch.right rightSize) ] ]
+              Canvas.children (createTree depth branch.right rightSize) ] ]
 
-    let private minSize =
-        { width = 75.0
-          height = 50.0 }
+    let private minSize = { width = 75.0; height = 25.0 }
 
-    let private createTree (tree: TreeNode<DiskItem>) (size: Size): IView list =
+    let private createTree (depth: int) (tree: TreeNode<DiskItem>) (size: Size): IView list =
         if size.width >= minSize.width && size.height >= minSize.height
             then
                 match tree with
-                | LeafNode leaf -> leafView leaf size
-                | BranchNode branch -> branchView branch size
+                | LeafNode leaf -> leafView depth leaf size
+                | BranchNode branch -> branchView depth branch size
             else
                 let view =
                     Canvas.create [ Canvas.background (Backgrounds.next ())
@@ -103,9 +135,7 @@ module rec BalancedTreeView =
         |> DiskItem.sizeInBytes
         |> Option.map (fun size -> { data = diskItem; weight = size })
 
-    let create (children: DiskItem list) initialSize attrs: IView =
-        Backgrounds.reset ()
-
+    let createWithDepth depth children initialSize attrs: IView =
         let leaves =
             children
             |> List.choose toLeaf
@@ -115,12 +145,16 @@ module rec BalancedTreeView =
             leaves
             |> BalancedTree.create
             |> Option.map BalancedTree.root
-            |> Option.map (fun root -> createTree root initialSize)
+            |> Option.map (fun root -> createTree depth root initialSize)
             |> Option.defaultValue []
 
         let defaults = [ Canvas.width initialSize.width
                          Canvas.height initialSize.height
                          Canvas.children childViews
-                         Canvas.background "#a000" ]
+                         Canvas.background "#111" ]
 
         Canvas.create (defaults @ attrs) :> IView
+
+    let create (children: DiskItem list) initialSize attrs: IView =
+        Backgrounds.reset ()
+        createWithDepth 0 children initialSize attrs
