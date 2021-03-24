@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="DiskSpaceUsage/BalancedTree.fs" />
     <Compile Include="DiskSpaceUsage/Time.fs" />
     <Compile Include="DiskSpaceUsage/FolderPath.fs" />
     <Compile Include="DiskSpaceUsage/DiskItem.fs" />

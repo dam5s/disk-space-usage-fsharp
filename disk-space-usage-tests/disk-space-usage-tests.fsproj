@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>disk_space_usage_tests</RootNamespace>
+
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
+    <PackageReference Include="NUnit" Version="3.13.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+    <PackageReference Include="FsUnit" Version="4.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="DiskSpacesUsageTests/BalancedTree.fs" />
+    <Compile Include="DiskSpacesUsageTests/Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\disk-space-usage-app\disk-space-usage-app.fsproj" />
+  </ItemGroup>
+
+</Project>
