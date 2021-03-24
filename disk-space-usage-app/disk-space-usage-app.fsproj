@@ -12,6 +12,7 @@
     <Compile Include="DiskSpaceUsage/FolderPath.fs" />
     <Compile Include="DiskSpaceUsage/DiskItem.fs" />
     <Compile Include="DiskSpaceUsage/SizeView.fs" />
+    <Compile Include="DiskSpaceUsage/BalancedTreeView.fs" />
     <Compile Include="DiskSpaceUsage/Icons.fs" />
     <Compile Include="DiskSpaceUsage/Styles.fs" />
     <Compile Include="DiskSpaceUsage/MainUI.fs" />

@@ -53,6 +53,9 @@ module Grid =
         ]
         Grid.create (defaults @ attrs) :> IView
 
+    let resizableRowHeight windowHeight =
+        windowHeight - 80.0 - 50.0 - 50.0 - 80.0
+
 [<RequireQualifiedAccess>]
 module TextBlock =
     let title text attrs: IView =

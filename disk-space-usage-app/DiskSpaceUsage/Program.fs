@@ -20,6 +20,11 @@ type MainWindow() as this =
         |> Program.withHost this
         |> Program.run
 
+        this
+            .GetPropertyChangedObservable(Controls.TopLevel.BoundsProperty)
+            .Subscribe(fun _ -> MainUI.Subscriptions.windowBoundsChanged this.Bounds)
+            |> ignore
+
 type App() =
     inherit Application()
 

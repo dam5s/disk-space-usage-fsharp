@@ -18,7 +18,7 @@ module BalancedTree =
 
     let root (BalancedTree root) = root
 
-    let rec private weight tree =
+    let rec weight tree =
         match tree with
         | LeafNode leaf -> leaf.weight
         | BranchNode branch -> (weight branch.left) + (weight branch.right)

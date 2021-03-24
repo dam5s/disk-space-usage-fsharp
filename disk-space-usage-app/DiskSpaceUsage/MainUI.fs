@@ -1,5 +1,6 @@
 ﻿module DiskSpaceUsage.MainUI
 
+open Avalonia
 open Elmish
 open System.IO
 open Avalonia.Layout
@@ -15,6 +16,7 @@ open Styles
 open FolderPath
 open DiskItem
 open SizeView
+open BalancedTreeView
 
 type Navigation =
     { root: DiskItem
@@ -27,10 +29,12 @@ type AsyncDiskItem =
 
 type Model =
     { window: Window
+      windowBounds: Rect
       rootDiskItem : AsyncDiskItem }
 
 let init window _ =
     { window = window
+      windowBounds = window.Bounds
       rootDiskItem = NotLoaded }, Cmd.none
 
 type Msg =
@@ -41,13 +45,17 @@ type Msg =
     | CloseFolder
     | NavigateToItem of DiskItem
     | NavigateBack
+    | UpdateWindowBounds of Rect
 
-module private Subscriptions =
+module Subscriptions =
     let mutable private dispatch = fun _ -> ()
     let mutable private lastNotify = Posix.now()
 
     let registerDispatch d =
         dispatch <- d
+
+    let windowBoundsChanged newBounds =
+        dispatch (UpdateWindowBounds newBounds)
 
     let notifyLoading folderPath =
         let now = Posix.now()
@@ -118,6 +126,8 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         match model.rootDiskItem with
         | Loaded nav -> { model with rootDiskItem = Loaded (navigateBack nav) }, Cmd.none
         | _ -> model, Cmd.none
+    | UpdateWindowBounds newBounds ->
+        { model with windowBounds = newBounds }, Cmd.none
 
 let private notLoadedView dispatch =
     Grid.main [
@@ -237,14 +247,28 @@ let private rowView (row: GraphRow) (dispatch: Dispatch<Msg>) =
         Border.child content
     ]
 
-let private folderView diskItem children dispatch =
-    let view = ListBox.create [
-        Grid.row 3
+let private folderView model diskItem children dispatch =
+    let windowBounds = model.window.Bounds
 
-        ListBox.dataItems (sortedRows diskItem children dispatch)
-        ListBox.itemTemplate (DataTemplateView<GraphRow>.create(fun row -> rowView row dispatch))
-    ]
-    view :> IView
+    let treeSize: BalancedTreeView.Size =
+        { width = windowBounds.Width / 2.0
+          height = Grid.resizableRowHeight windowBounds.Height |> double }
+
+    Grid.create [
+        Grid.row 3
+        Grid.rowDefinitions "*"
+        Grid.columnDefinitions "*, *"
+        Grid.children [
+            ListBox.create [
+                Grid.column 0
+                ListBox.dataItems (sortedRows diskItem children dispatch)
+                ListBox.itemTemplate (DataTemplateView<GraphRow>.create(fun row -> rowView row dispatch))
+            ]
+            BalancedTreeView.create children treeSize [
+                Grid.column 1
+            ]
+        ]
+    ] :> IView
 
 let private fileView diskItem dispatch =
     TextBlock.create [
@@ -252,10 +276,10 @@ let private fileView diskItem dispatch =
         TextBlock.text "file"
     ] :> IView
 
-let private itemView (diskItem: DiskItem) dispatch =
+let private itemView model (diskItem: DiskItem) dispatch =
     match diskItem.itemType with
     | File -> fileView diskItem dispatch
-    | Folder attrs -> folderView diskItem attrs.children dispatch
+    | Folder attrs -> folderView model diskItem attrs.children dispatch
 
 let private topDiskItem nav =
     nav.history
@@ -272,7 +296,7 @@ let private backButtonView dispatch =
 let private emptyView =
     TextBlock.create [ Grid.row 0 ] :> IView
 
-let private loadedView (nav: Navigation) dispatch =
+let private loadedView model (nav: Navigation) dispatch =
     let topItem = topDiskItem nav
     let sizeText = SizeView.text topItem.size
 
@@ -295,7 +319,7 @@ let private loadedView (nav: Navigation) dispatch =
                 Grid.row 2
             ]
             backButton
-            itemView topItem dispatch
+            itemView model topItem dispatch
         ]
     ]
 
@@ -303,4 +327,4 @@ let view (model: Model) (dispatch: Dispatch<Msg>) =
     match model.rootDiskItem with
     | NotLoaded -> notLoadedView dispatch
     | Loading path -> loadingView path dispatch
-    | Loaded nav -> loadedView nav dispatch
+    | Loaded nav -> loadedView model nav dispatch
