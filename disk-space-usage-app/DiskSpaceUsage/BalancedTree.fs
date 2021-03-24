@@ -76,6 +76,9 @@ module BalancedTree =
                 sortedTrees <- sortedTrees @ [
                     BranchNode { left = leftTree; right = rightTree }
                 ]
+            | Some leftTree, None ->
+                left <- None
+                sortedTrees <- sortedTrees @ [ leftTree ]
             | _ -> ()
 
         sortedTrees

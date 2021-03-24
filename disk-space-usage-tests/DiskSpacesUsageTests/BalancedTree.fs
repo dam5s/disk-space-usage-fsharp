@@ -36,3 +36,13 @@ let ``building a simple balanced tree`` () =
             )
 
     tree |> Option.map BalancedTree.root |> should equal (Some expectedTree)
+
+[<Test>]
+let ``building a tree with a single leaf`` () =
+    let leaves = [ leaf "File A" 9 ]
+
+    let tree = BalancedTree.create leaves
+
+    let expectedTree = (leafNode "File A" 9)
+
+    tree |> Option.map BalancedTree.root |> should equal (Some expectedTree)
