@@ -11,8 +11,8 @@ type MainWindow() as this =
     inherit HostWindow()
     do
         base.Title <- "Disk Space Usage"
-        base.Width <- 600.0
-        base.Height <- 400.0
+        base.Width <- 1200.0
+        base.Height <- 800.0
 
         ((MainUI.init this), MainUI.update, MainUI.view)
         |||> Elmish.Program.mkProgram

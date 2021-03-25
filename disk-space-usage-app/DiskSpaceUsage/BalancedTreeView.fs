@@ -1,5 +1,6 @@
 ﻿module DiskSpaceUsage.BalancedTreeView
 
+open Avalonia.Input
 open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
@@ -60,10 +61,12 @@ module rec BalancedTreeView =
         let labelView =
             TextBlock.create [ Canvas.top labelOffset.top
                                Canvas.left labelOffset.left
+                               TextBlock.background "#00000000"
                                TextBlock.width (insetSize.width - estimatedMaxSizeViewWidth)
                                TextBlock.height textSize.height
                                TextBlock.textTrimming TextTrimming.CharacterEllipsis
-                               TextBlock.onDoubleTapped (fun _ -> config.onItemSelected leaf.data)
+                               TextBlock.onTapped (fun _ -> config.onItemSelected leaf.data)
+                               TextBlock.cursor (Cursor.Parse("Hand"))
                                TextBlock.text leaf.data.name ]
 
         let sizeView =
@@ -72,6 +75,8 @@ module rec BalancedTreeView =
                                TextBlock.textAlignment TextAlignment.Right
                                TextBlock.width insetSize.width
                                TextBlock.height textSize.height
+                               TextBlock.onTapped (fun _ -> config.onItemSelected leaf.data)
+                               TextBlock.cursor (Cursor.Parse("Hand"))
                                TextBlock.text (SizeView.text leaf.data.size) ]
 
         let rectangleView children =

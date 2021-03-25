@@ -2,13 +2,10 @@
 
 open Avalonia
 open Elmish
-open System.IO
 open Avalonia.Layout
-open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
-open Avalonia.FuncUI.Components
 
 open Time
 open Icons
@@ -158,100 +155,11 @@ let private loadingView folderPath dispatch =
         ]
     ]
 
-type GraphRow =
-    { item: DiskItem
-      percentage: float option
-      name: string
-      size: string }
-
-module private GraphRow =
-    let fileName (fullPath: string) =
-        fullPath.Split(Path.DirectorySeparatorChar)
-        |> Array.tryLast
-        |> Option.defaultValue fullPath
-
-    let create (parent: DiskItem) (diskItem: DiskItem) =
-        let bytes = DiskItem.sizeInBytes diskItem
-        let parentBytes = DiskItem.sizeInBytes parent
-        let percentage =
-            (bytes, parentBytes)
-            ||> Option.map2 (fun b p -> float b / float p)
-
-        { item = diskItem
-          percentage = percentage
-          name = diskItem.name
-          size = SizeView.text diskItem.size }
-
-let private equalSize count =
-    "*"
-    |> List.replicate count
-    |> String.concat ","
-
-let private sortedRows diskItem children dispatch =
-    children
-    |> List.map (GraphRow.create diskItem)
-    |> List.sortByDescending (fun c -> c.percentage |> Option.defaultValue -1.0)
-
-let private rowView (row: GraphRow) (dispatch: Dispatch<Msg>) =
-    let rowPercentage =
-        row.percentage
-        |> Option.defaultValue 0.0
-
-    let colSpan =
-        100.0 * rowPercentage
-        |> int
-        |> max 1
-        |> min 100
-
-    let barColor =
-        if rowPercentage > 0.0
-        then "#339999ff"
-        else "#00000000"
-
-    let content =
-        Grid.create [
-            Grid.rowDefinitions "*"
-            Grid.columnDefinitions (equalSize 100)
-            Grid.height 30.0
-            Grid.onDoubleTapped (fun _ -> NavigateToItem row.item |> dispatch)
-            Grid.background "#282828"
-            Grid.children [
-                DockPanel.create [
-                    Grid.row 0
-                    Grid.column 0
-                    Grid.columnSpan colSpan
-                    DockPanel.background barColor
-                ]
-                TextBlock.create [
-                    Grid.row 0
-                    Grid.column 1
-                    Grid.columnSpan 98
-                    TextBlock.verticalAlignment VerticalAlignment.Center
-                    TextBlock.textAlignment TextAlignment.Left
-                    TextBlock.text row.name
-                ]
-                TextBlock.create [
-                    Grid.row 0
-                    Grid.column 1
-                    Grid.columnSpan 98
-                    TextBlock.verticalAlignment VerticalAlignment.Center
-                    TextBlock.textAlignment TextAlignment.Right
-                    TextBlock.text row.size
-                ]
-            ]
-        ]
-
-    Border.create [
-        Border.borderBrush "#ffffff"
-        Border.borderThickness (0.0, 0.0, 0.0, 1.0)
-        Border.child content
-    ]
-
 let private folderView model diskItem children dispatch =
     let windowBounds = model.window.Bounds
 
-    let treeSize: BalancedTreeView.Size =
-        { width = windowBounds.Width / 2.0
+    let treeSize =
+        { width = windowBounds.Width
           height = Grid.resizableRowHeight windowBounds.Height |> double }
 
     let treeViewConfig: BalancedTreeView.Config =
@@ -259,21 +167,9 @@ let private folderView model diskItem children dispatch =
           size = treeSize
           onItemSelected = fun item -> NavigateToItem item |> dispatch }
 
-    Grid.create [
+    BalancedTreeView.create treeViewConfig [
         Grid.row 3
-        Grid.rowDefinitions "*"
-        Grid.columnDefinitions "*, *"
-        Grid.children [
-            ListBox.create [
-                Grid.column 0
-                ListBox.dataItems (sortedRows diskItem children dispatch)
-                ListBox.itemTemplate (DataTemplateView<GraphRow>.create(fun row -> rowView row dispatch))
-            ]
-            BalancedTreeView.create treeViewConfig [
-                Grid.column 1
-            ]
-        ]
-    ] :> IView
+    ]
 
 let private fileView diskItem dispatch =
     TextBlock.create [
