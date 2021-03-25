@@ -50,34 +50,29 @@ module rec BalancedTreeView =
 
     let private leafView (depth: int) leaf (config: Config): IView list =
         let size = config.size
-        let labelOffset = { top = leafPadding; left = leafPadding }
         let insetSize = { width = size.width - leafPadding * 2.0; height = size.height - leafPadding * 2.0 }
-        let textSize = { width = insetSize.width; height = 15.0 }
-        let leafOffset = { top = textSize.height + leafPadding * 2.0; left = leafPadding }
-        let leafSize = { width = insetSize.width; height = insetSize.height - textSize.height - leafPadding }
+        let titleOffset = { top = leafPadding; left = leafPadding }
+        let titleSize = { width = insetSize.width; height = 15.0 }
+        let leafOffset = { top = titleSize.height + leafPadding * 2.0; left = leafPadding }
+        let leafSize = { width = insetSize.width; height = insetSize.height - titleSize.height - leafPadding }
 
-        let estimatedMaxSizeViewWidth = 50.0
-
-        let labelView =
-            TextBlock.create [ Canvas.top labelOffset.top
-                               Canvas.left labelOffset.left
-                               TextBlock.background "#00000000"
-                               TextBlock.width (insetSize.width - estimatedMaxSizeViewWidth)
-                               TextBlock.height textSize.height
-                               TextBlock.textTrimming TextTrimming.CharacterEllipsis
-                               TextBlock.onTapped (fun _ -> config.onItemSelected leaf.data)
-                               TextBlock.cursor (Cursor.Parse("Hand"))
-                               TextBlock.text leaf.data.name ]
-
-        let sizeView =
-            TextBlock.create [ Canvas.top labelOffset.top
-                               Canvas.left labelOffset.left
-                               TextBlock.textAlignment TextAlignment.Right
-                               TextBlock.width insetSize.width
-                               TextBlock.height textSize.height
-                               TextBlock.onTapped (fun _ -> config.onItemSelected leaf.data)
-                               TextBlock.cursor (Cursor.Parse("Hand"))
-                               TextBlock.text (SizeView.text leaf.data.size) ]
+        let topBar =
+            DockPanel.create [
+                Canvas.top titleOffset.top
+                Canvas.left titleOffset.left
+                DockPanel.width titleSize.width
+                DockPanel.height titleSize.height
+                DockPanel.onTapped (fun _ -> config.onItemSelected leaf.data)
+                DockPanel.cursor (Cursor.Parse("Hand"))
+                DockPanel.background "#00000000"
+                DockPanel.children [
+                    TextBlock.create [ DockPanel.dock Dock.Right
+                                       TextBlock.text (SizeView.text leaf.data.size) ]
+                    TextBlock.create [ DockPanel.dock Dock.Left
+                                       TextBlock.textTrimming TextTrimming.CharacterEllipsis
+                                       TextBlock.text leaf.data.name ]
+                ]
+            ]
 
         let rectangleView children =
             Canvas.make leafOffset leafSize
@@ -94,7 +89,7 @@ module rec BalancedTreeView =
                     let childrenInset = 16.0
                     let childrenOffset = { top = childrenInset; left = childrenInset }
                     let childrenSize = { width = insetSize.width - childrenInset * 2.0
-                                         height = insetSize.height - textSize.height - childrenInset * 2.0 }
+                                         height = insetSize.height - titleSize.height - childrenInset * 2.0 }
                     let childrenConfig = { config with size = childrenSize; children = attrs.children }
 
                     [ createWithDepth (depth + 1) childrenConfig [
@@ -104,7 +99,7 @@ module rec BalancedTreeView =
 
         [ Canvas.make noOffset size [
             Canvas.background (Backgrounds.next())
-            Canvas.children [ labelView; sizeView; rectangleView childrenViews ]
+            Canvas.children [ topBar; rectangleView childrenViews ]
         ] ]
 
     let branchView depth (branch: Branch<DiskItem>) (config: Config): IView list =
