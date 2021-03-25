@@ -52,11 +52,10 @@ module rec BalancedTreeView =
 
     let private leafView (depth: int) leaf (config: Config): IView list =
         let size = config.size
-        let insetSize = { width = size.width - leafPadding * 2.0; height = size.height - leafPadding * 2.0 }
         let titleOffset = noOffset
         let titleSize = { width = size.width; height = 20.0 }
         let leafOffset = { top = titleSize.height; left = leafPadding }
-        let leafSize = { width = insetSize.width; height = insetSize.height - titleSize.height - leafPadding }
+        let leafSize = { width = size.width - leafPadding * 2.0; height = size.height - titleSize.height - leafPadding }
 
         let topBar =
             DockPanel.create [
@@ -93,8 +92,8 @@ module rec BalancedTreeView =
                 else
                     let childrenInset = 16.0
                     let childrenOffset = { top = childrenInset; left = childrenInset }
-                    let childrenSize = { width = insetSize.width - childrenInset * 2.0
-                                         height = insetSize.height - titleSize.height - childrenInset * 2.0 }
+                    let childrenSize = { width = leafSize.width - childrenInset * 2.0
+                                         height = leafSize.height - childrenInset * 2.0 }
                     let childrenConfig = { config with size = childrenSize; children = attrs.children }
 
                     [ createWithDepth (depth + 1) childrenConfig [
