@@ -1,5 +1,6 @@
 ﻿module DiskSpaceUsage.BalancedTreeView
 
+open Avalonia.Layout
 open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
@@ -11,7 +12,7 @@ open SizeView
 open Styles
 
 module private Backgrounds =
-    let private all = [ "#622"; "#262"; "#226"; "#266"; "#626" ]
+    let private all = [ "#844"; "#484"; "#448"; "#488"; "#848" ]
     let mutable private cursor = 0
 
     let reset () =
@@ -52,9 +53,9 @@ module rec BalancedTreeView =
     let private leafView (depth: int) leaf (config: Config): IView list =
         let size = config.size
         let insetSize = { width = size.width - leafPadding * 2.0; height = size.height - leafPadding * 2.0 }
-        let titleOffset = { top = leafPadding; left = leafPadding }
-        let titleSize = { width = insetSize.width; height = 15.0 }
-        let leafOffset = { top = titleSize.height + leafPadding * 2.0; left = leafPadding }
+        let titleOffset = noOffset
+        let titleSize = { width = size.width; height = 20.0 }
+        let leafOffset = { top = titleSize.height; left = leafPadding }
         let leafSize = { width = insetSize.width; height = insetSize.height - titleSize.height - leafPadding }
 
         let topBar =
@@ -67,8 +68,12 @@ module rec BalancedTreeView =
                 DockPanel.classes ["topBar"]
                 DockPanel.children [
                     TextBlock.create [ DockPanel.dock Dock.Right
+                                       TextBlock.verticalAlignment VerticalAlignment.Center
+                                       TextBlock.margin (4.0, 0.0)
                                        TextBlock.text (SizeView.text leaf.data.size) ]
                     TextBlock.create [ DockPanel.dock Dock.Left
+                                       TextBlock.verticalAlignment VerticalAlignment.Center
+                                       TextBlock.margin (4.0, 0.0)
                                        TextBlock.textTrimming TextTrimming.CharacterEllipsis
                                        TextBlock.text leaf.data.name ]
                 ]

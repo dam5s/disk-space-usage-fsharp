@@ -159,7 +159,7 @@ let private folderView model diskItem children dispatch =
     let windowBounds = model.window.Bounds
 
     let treeSize =
-        { width = windowBounds.Width
+        { width = windowBounds.Width - 100.0
           height = Grid.resizableRowHeight windowBounds.Height |> double }
 
     let treeViewConfig: BalancedTreeView.Config =
