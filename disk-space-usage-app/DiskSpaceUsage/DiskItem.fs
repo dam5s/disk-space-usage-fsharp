@@ -1,7 +1,6 @@
 ﻿module DiskSpaceUsage.DiskItem
 
 open System.IO
-open DiskSpaceUsage
 open FolderPath
 
 type SizeOnDisk =

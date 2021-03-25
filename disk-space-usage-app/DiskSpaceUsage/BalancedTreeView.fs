@@ -1,12 +1,14 @@
 ﻿module DiskSpaceUsage.BalancedTreeView
 
-open Avalonia.Input
 open Avalonia.Media
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
-open DiskSpaceUsage.BalancedTree
-open DiskSpaceUsage.DiskItem
-open DiskSpaceUsage.SizeView
+open Avalonia.FuncUI.Types
+
+open BalancedTree
+open DiskItem
+open SizeView
+open Styles
 
 module private Backgrounds =
     let private all = [ "#622"; "#262"; "#226"; "#266"; "#626" ]
@@ -37,7 +39,6 @@ module Canvas =
 
 [<RequireQualifiedAccess>]
 module rec BalancedTreeView =
-    open Avalonia.FuncUI.Types
 
     type Config =
         { children: DiskItem list
@@ -63,8 +64,7 @@ module rec BalancedTreeView =
                 DockPanel.width titleSize.width
                 DockPanel.height titleSize.height
                 DockPanel.onTapped (fun _ -> config.onItemSelected leaf.data)
-                DockPanel.cursor (Cursor.Parse("Hand"))
-                DockPanel.background "#00000000"
+                DockPanel.classes ["topBar"]
                 DockPanel.children [
                     TextBlock.create [ DockPanel.dock Dock.Right
                                        TextBlock.text (SizeView.text leaf.data.size) ]
