@@ -50,7 +50,7 @@ module rec TreeMapView =
     let private leafPadding = 2.0
     let private leafRectangleColor = "#6fff"
 
-    let private leafView (depth: int) leaf (config: Config): IView list =
+    let private leafView (depth: int) (leaf: Leaf<DiskItem>) (config: Config): IView list =
         let size = config.size
         let titleOffset = noOffset
         let titleSize = { width = size.width; height = 20.0 }

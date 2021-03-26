@@ -7,7 +7,7 @@ open Avalonia.Controls
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 
-open Time
+open Debounce
 open Icons
 open Styles
 open FolderPath
@@ -44,9 +44,24 @@ type Msg =
     | NavigateBack
     | UpdateWindowBounds of Rect
 
+[<RequireQualifiedAccess>]
+module private Navigate =
+    let mutable private state = Debounce.init 500
+
+    let private debounce f =
+        state <- Debounce.invoke f state
+
+    let toItem item dispatch =
+        fun _ -> dispatch (NavigateToItem item)
+        |> debounce
+
+    let back dispatch =
+        fun _ -> dispatch NavigateBack
+        |> debounce
+
 module Subscriptions =
     let mutable private dispatch = fun _ -> ()
-    let mutable private lastNotify = Posix.now()
+    let mutable private notifyLoadingDebounce = Debounce.init 100
 
     let registerDispatch d =
         dispatch <- d
@@ -55,15 +70,8 @@ module Subscriptions =
         dispatch (UpdateWindowBounds newBounds)
 
     let notifyLoading folderPath =
-        let now = Posix.now()
-        let msSinceLastNotify = Posix.milliseconds now - Posix.milliseconds lastNotify
-
-        if msSinceLastNotify > int64 100
-        then
-            lastNotify <- now
-            dispatch (NowLoading folderPath)
-        else
-            ()
+        let f = fun _ -> dispatch (NowLoading folderPath)
+        notifyLoadingDebounce <- Debounce.invoke f notifyLoadingDebounce
 
 let subscribe model: Cmd<Msg> =
     Cmd.ofSub Subscriptions.registerDispatch
@@ -95,7 +103,7 @@ let private loadFolderUsageAsync path =
 let private asyncCmd = Cmd.OfAsync.result
 
 let private navigateToItem (diskItem: DiskItem) (nav: Navigation) =
-    { nav with history = diskItem :: nav.history}
+    { nav with history = diskItem :: nav.history }
 
 let private navigateBack (nav: Navigation) =
     match nav.history with
@@ -165,7 +173,7 @@ let private folderView model diskItem children dispatch =
     let treeViewConfig: TreeMapView.Config =
         { children = children
           size = treeSize
-          onItemSelected = fun item -> NavigateToItem item |> dispatch }
+          onItemSelected = fun item -> Navigate.toItem item dispatch }
 
     TreeMapView.create treeViewConfig [
         Grid.row 3
@@ -191,7 +199,7 @@ let private backButtonView dispatch =
     Button.icon Icons.arrowLeftCircle [
         Grid.row 0
         Button.horizontalAlignment HorizontalAlignment.Left
-        Button.onClick (fun _ -> dispatch NavigateBack)
+        Button.onClick (fun _ -> Navigate.back dispatch)
     ]
 
 let private emptyView =

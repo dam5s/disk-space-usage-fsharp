@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="DiskSpaceUsage\TreeMap.fs" />
     <Compile Include="DiskSpaceUsage\Time.fs" />
+    <Compile Include="DiskSpaceUsage\Debounce.fs" />
     <Compile Include="DiskSpaceUsage\FolderPath.fs" />
     <Compile Include="DiskSpaceUsage\DiskItem.fs" />
     <Compile Include="DiskSpaceUsage\Styles.fs" />
