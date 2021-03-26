@@ -38,24 +38,30 @@ module Canvas =
         ]
         Canvas.create (defaults @ attrs)
 
+type DiskItemNavigation =
+    { diskItem: DiskItem
+      parent: DiskItemNavigation option }
+
 [<RequireQualifiedAccess>]
 module rec TreeMapView =
 
     type Config =
-        { children: DiskItem list
+        { children: DiskItemNavigation list
           size: Size
-          onItemSelected: DiskItem -> unit }
+          onItemSelected: DiskItemNavigation -> unit }
 
     let private noOffset = { top = 0.0; left = 0.0 }
     let private leafPadding = 2.0
     let private leafRectangleColor = "#6fff"
 
-    let private leafView (depth: int) (leaf: Leaf<DiskItem>) (config: Config): IView list =
+    let private leafView (depth: int) (leaf: Leaf<DiskItemNavigation>) (config: Config): IView list =
         let size = config.size
         let titleOffset = noOffset
         let titleSize = { width = size.width; height = 20.0 }
         let leafOffset = { top = titleSize.height; left = leafPadding }
         let leafSize = { width = size.width - leafPadding * 2.0; height = size.height - titleSize.height - leafPadding }
+
+        let diskItem = leaf.data.diskItem
 
         let topBar =
             DockPanel.create [
@@ -65,12 +71,12 @@ module rec TreeMapView =
                     TextBlock.create [ DockPanel.dock Dock.Right
                                        TextBlock.verticalAlignment VerticalAlignment.Center
                                        TextBlock.margin (4.0, 0.0)
-                                       TextBlock.text (SizeView.text leaf.data.size) ]
+                                       TextBlock.text (SizeView.text diskItem.size) ]
                     TextBlock.create [ DockPanel.dock Dock.Left
                                        TextBlock.verticalAlignment VerticalAlignment.Center
                                        TextBlock.margin (4.0, 0.0)
                                        TextBlock.textTrimming TextTrimming.CharacterEllipsis
-                                       TextBlock.text leaf.data.name ]
+                                       TextBlock.text diskItem.name ]
                 ]
             ]
 
@@ -91,7 +97,7 @@ module rec TreeMapView =
                   Canvas.children children ]
 
         let childrenViews =
-            match leaf.data.itemType with
+            match diskItem.itemType with
             | File -> []
             | Folder attrs ->
                 if depth >= 2
@@ -101,7 +107,11 @@ module rec TreeMapView =
                     let childrenOffset = { top = childrenInset; left = childrenInset }
                     let childrenSize = { width = leafSize.width - childrenInset * 2.0
                                          height = leafSize.height - childrenInset * 2.0 }
-                    let childrenConfig = { config with size = childrenSize; children = attrs.children }
+
+                    let childNav c = { diskItem = c; parent = Some leaf.data }
+                    let children = attrs.children |> List.map childNav
+
+                    let childrenConfig = { config with size = childrenSize; children = children }
 
                     [ createWithDepth (depth + 1) childrenConfig [
                         Canvas.top childrenOffset.top
@@ -113,7 +123,7 @@ module rec TreeMapView =
             Canvas.children [ topBarButton; rectangleView childrenViews ]
         ] ]
 
-    let branchView depth (branch: Branch<DiskItem>) (config: Config): IView list =
+    let branchView depth (branch: Branch<DiskItemNavigation>) (config: Config): IView list =
         let size = config.size
         let leftWeight = TreeMap.weight branch.left |> double
         let rightWeight = TreeMap.weight branch.right |> double
@@ -157,7 +167,7 @@ module rec TreeMapView =
             ]
         ]
 
-    let private createTree (depth: int) (tree: BinaryTree<DiskItem>) (config: Config): IView list =
+    let private createTree (depth: int) (tree: BinaryTree<DiskItemNavigation>) (config: Config): IView list =
         if config.size.width >= minSize.width && config.size.height >= minSize.height
             then
                 match tree with
@@ -166,10 +176,10 @@ module rec TreeMapView =
             else
                 [ emptyView config ]
 
-    let private toLeaf diskItem =
-        diskItem
+    let private toLeaf nav =
+        nav.diskItem
         |> DiskItem.sizeInBytes
-        |> Option.map (fun size -> { data = diskItem; weight = size })
+        |> Option.map (fun size -> { data = nav; weight = size })
 
     let createWithDepth depth config attrs: IView =
         let leaves =

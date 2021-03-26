@@ -12,27 +12,23 @@ open Icons
 open Styles
 open FolderPath
 open DiskItem
-open SizeView
 open TreeMapView
-
-type Navigation =
-    { root: DiskItem
-      history: DiskItem list }
+open SizeView
 
 type AsyncDiskItem =
     | NotLoaded
     | Loading of FolderPath
-    | Loaded of Navigation
+    | Loaded of DiskItemNavigation
 
 type Model =
     { window: Window
       windowBounds: Rect
-      rootDiskItem : AsyncDiskItem }
+      asyncDiskItem : AsyncDiskItem }
 
 let init window _ =
     { window = window
       windowBounds = window.Bounds
-      rootDiskItem = NotLoaded }, Cmd.none
+      asyncDiskItem = NotLoaded }, Cmd.none
 
 type Msg =
     | OpenFolderSelectDialog
@@ -40,8 +36,8 @@ type Msg =
     | NowLoading of FolderPath
     | FinishLoading of DiskItem
     | CloseFolder
-    | NavigateToItem of DiskItem
-    | NavigateBack
+    | NavigateTo of DiskItemNavigation
+    | NavigateUp
     | UpdateWindowBounds of Rect
 
 [<RequireQualifiedAccess>]
@@ -51,12 +47,12 @@ module private Navigate =
     let private debounce f =
         state <- Debounce.invoke f state
 
-    let toItem item dispatch =
-        fun _ -> dispatch (NavigateToItem item)
+    let toItem nav dispatch =
+        fun _ -> dispatch (NavigateTo nav)
         |> debounce
 
-    let back dispatch =
-        fun _ -> dispatch NavigateBack
+    let up dispatch =
+        fun _ -> dispatch NavigateUp
         |> debounce
 
 module Subscriptions =
@@ -102,35 +98,34 @@ let private loadFolderUsageAsync path =
 
 let private asyncCmd = Cmd.OfAsync.result
 
-let private navigateToItem (diskItem: DiskItem) (nav: Navigation) =
-    { nav with history = diskItem :: nav.history }
+let private navigateUp (model: Model) =
+    match model.asyncDiskItem with
+    | Loaded nav ->
+        match nav.parent with
+        | Some parent -> { model with asyncDiskItem = Loaded parent }
+        | None -> model
+    | _ -> model
 
-let private navigateBack (nav: Navigation) =
-    match nav.history with
-    | _ :: tail -> { nav with history = tail }
-    | [] -> { nav with history = [] }
+let private navigateToItem nav (model: Model) =
+    { model with asyncDiskItem = Loaded nav }
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | OpenFolderSelectDialog ->
         model, asyncCmd (selectFolderAsync model.window)
     | SelectFolder path ->
-        { model with rootDiskItem = Loading path }, asyncCmd (loadFolderUsageAsync path)
+        { model with asyncDiskItem = Loading path }, asyncCmd (loadFolderUsageAsync path)
     | NowLoading path ->
-        { model with rootDiskItem = Loading path }, Cmd.none
+        { model with asyncDiskItem = Loading path }, Cmd.none
     | FinishLoading diskItem ->
-        let nav = { root = diskItem; history = [] }
-        { model with rootDiskItem = Loaded nav }, Cmd.none
+        let loadedItem = Loaded { diskItem = diskItem; parent = None }
+        { model with asyncDiskItem = loadedItem }, Cmd.none
     | CloseFolder ->
-        { model with rootDiskItem = NotLoaded }, Cmd.none
-    | NavigateToItem diskItem ->
-        match model.rootDiskItem with
-        | Loaded nav -> { model with rootDiskItem = Loaded (navigateToItem diskItem nav) }, Cmd.none
-        | _ -> model, Cmd.none
-    | NavigateBack ->
-        match model.rootDiskItem with
-        | Loaded nav -> { model with rootDiskItem = Loaded (navigateBack nav) }, Cmd.none
-        | _ -> model, Cmd.none
+        { model with asyncDiskItem = NotLoaded }, Cmd.none
+    | NavigateTo diskItem ->
+        navigateToItem diskItem model, Cmd.none
+    | NavigateUp ->
+        navigateUp model, Cmd.none
     | UpdateWindowBounds newBounds ->
         { model with windowBounds = newBounds }, Cmd.none
 
@@ -166,17 +161,19 @@ let private loadingView folderPath dispatch =
         ]
     ]
 
-let private folderView model diskItem children dispatch =
+let private folderView model (nav: DiskItemNavigation) (children: DiskItem list) dispatch =
     let windowBounds = model.window.Bounds
 
     let treeSize =
         { width = windowBounds.Width - 100.0
           height = Grid.resizableRowHeight windowBounds.Height |> double }
 
+    let childNav c = { diskItem = c; parent = Some nav }
+
     let treeViewConfig: TreeMapView.Config =
-        { children = children
+        { children = children |> List.map childNav
           size = treeSize
-          onItemSelected = fun item -> Navigate.toItem item dispatch }
+          onItemSelected = fun nav -> Navigate.toItem nav dispatch }
 
     TreeMapView.create treeViewConfig [
         Grid.row 3
@@ -188,35 +185,29 @@ let private fileView diskItem dispatch =
         TextBlock.text "file"
     ] :> IView
 
-let private itemView model (diskItem: DiskItem) dispatch =
-    match diskItem.itemType with
-    | File -> fileView diskItem dispatch
-    | Folder attrs -> folderView model diskItem attrs.children dispatch
+let private itemView model (nav: DiskItemNavigation) dispatch =
+    match nav.diskItem.itemType with
+    | File -> fileView nav dispatch
+    | Folder attrs -> folderView model nav attrs.children dispatch
 
-let private topDiskItem nav =
-    nav.history
-    |> List.tryHead
-    |> Option.defaultValue nav.root
-
-let private backButtonView dispatch =
+let private upButtonView dispatch =
     Button.icon Icons.arrowLeftCircle [
         Grid.row 2
         Button.horizontalAlignment HorizontalAlignment.Left
         Button.verticalAlignment VerticalAlignment.Center
-        Button.onClick (fun _ -> Navigate.back dispatch)
+        Button.onClick (fun _ -> Navigate.up dispatch)
     ]
 
 let private emptyView =
     TextBlock.create [ Grid.row 0 ] :> IView
 
-let private loadedView model (nav: Navigation) dispatch =
-    let topItem = topDiskItem nav
-    let sizeText = SizeView.text topItem.size
+let private loadedView model (nav: DiskItemNavigation) dispatch =
+    let sizeText = SizeView.text nav.diskItem.size
 
     let backButton =
-        if List.isEmpty nav.history
-        then emptyView
-        else backButtonView dispatch
+        nav.parent
+        |> Option.map (fun _ -> upButtonView dispatch)
+        |> Option.defaultValue emptyView
 
     Grid.main [
         Grid.children [
@@ -229,16 +220,16 @@ let private loadedView model (nav: Navigation) dispatch =
             TextBlock.title sizeText [
                 Grid.row 0
             ]
-            TextBlock.subTitle topItem.name [
+            TextBlock.subTitle nav.diskItem.name [
                 Grid.row 1
             ]
             backButton
-            itemView model topItem dispatch
+            itemView model nav dispatch
         ]
     ]
 
 let view (model: Model) (dispatch: Dispatch<Msg>) =
-    match model.rootDiskItem with
+    match model.asyncDiskItem with
     | NotLoaded -> notLoadedView dispatch
     | Loading path -> loadingView path dispatch
     | Loaded nav -> loadedView model nav dispatch
