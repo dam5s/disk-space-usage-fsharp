@@ -13,7 +13,7 @@ open Styles
 open FolderPath
 open DiskItem
 open SizeView
-open BalancedTreeView
+open TreeMapView
 
 type Navigation =
     { root: DiskItem
@@ -162,12 +162,12 @@ let private folderView model diskItem children dispatch =
         { width = windowBounds.Width - 100.0
           height = Grid.resizableRowHeight windowBounds.Height |> double }
 
-    let treeViewConfig: BalancedTreeView.Config =
+    let treeViewConfig: TreeMapView.Config =
         { children = children
           size = treeSize
           onItemSelected = fun item -> NavigateToItem item |> dispatch }
 
-    BalancedTreeView.create treeViewConfig [
+    TreeMapView.create treeViewConfig [
         Grid.row 3
     ]
 

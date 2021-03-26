@@ -1,16 +1,16 @@
-module DiskSpaceUsageTests.BalancedTree
+module DiskSpaceUsageTests.TreeMap
 
 open NUnit.Framework
 open FsUnit
 
-open DiskSpaceUsage.BalancedTree
+open DiskSpaceUsage.TreeMap
 
 let private leaf data weight = { data = data; weight = int64 weight }
-let private leafNode data weight = LeafNode (leaf data weight)
-let private branchNode left right = BranchNode { left = left; right = right }
+let private leafNode data weight = Leaf (leaf data weight)
+let private branchNode left right = Branch { left = left; right = right }
 
 [<Test>]
-let ``building a simple balanced tree`` () =
+let ``building a simple tree map`` () =
     let leaves: Leaf<string> list = [
         leaf "File A" 9
         leaf "File C" 11
@@ -19,7 +19,7 @@ let ``building a simple balanced tree`` () =
         leaf "File D" 15
     ]
 
-    let tree = BalancedTree.create leaves
+    let tree = TreeMap.create leaves
 
     let expectedTree =
         branchNode
@@ -35,14 +35,14 @@ let ``building a simple balanced tree`` () =
                 )
             )
 
-    tree |> Option.map BalancedTree.root |> should equal (Some expectedTree)
+    tree |> Option.map TreeMap.root |> should equal (Some expectedTree)
 
 [<Test>]
-let ``building a tree with a single leaf`` () =
+let ``building a tree map with a single leaf`` () =
     let leaves = [ leaf "File A" 9 ]
 
-    let tree = BalancedTree.create leaves
+    let tree = TreeMap.create leaves
 
     let expectedTree = (leafNode "File A" 9)
 
-    tree |> Option.map BalancedTree.root |> should equal (Some expectedTree)
+    tree |> Option.map TreeMap.root |> should equal (Some expectedTree)

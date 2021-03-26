@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="DiskSpacesUsageTests/BalancedTree.fs" />
-    <Compile Include="DiskSpacesUsageTests/Program.fs" />
+    <Compile Include="DiskSpacesUsageTests\TreeMap.fs" />
+    <Compile Include="DiskSpacesUsageTests\Program.fs" />
   </ItemGroup>
 
   <ItemGroup>

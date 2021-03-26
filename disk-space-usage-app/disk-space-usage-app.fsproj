@@ -7,16 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="DiskSpaceUsage/BalancedTree.fs" />
-    <Compile Include="DiskSpaceUsage/Time.fs" />
-    <Compile Include="DiskSpaceUsage/FolderPath.fs" />
-    <Compile Include="DiskSpaceUsage/DiskItem.fs" />
-    <Compile Include="DiskSpaceUsage/Styles.fs" />
-    <Compile Include="DiskSpaceUsage/SizeView.fs" />
-    <Compile Include="DiskSpaceUsage/BalancedTreeView.fs" />
-    <Compile Include="DiskSpaceUsage/Icons.fs" />
-    <Compile Include="DiskSpaceUsage/MainUI.fs" />
-    <Compile Include="DiskSpaceUsage/Program.fs" />
+    <Compile Include="DiskSpaceUsage\TreeMap.fs" />
+    <Compile Include="DiskSpaceUsage\Time.fs" />
+    <Compile Include="DiskSpaceUsage\FolderPath.fs" />
+    <Compile Include="DiskSpaceUsage\DiskItem.fs" />
+    <Compile Include="DiskSpaceUsage\Styles.fs" />
+    <Compile Include="DiskSpaceUsage\SizeView.fs" />
+    <Compile Include="DiskSpaceUsage\TreeMapView.fs" />
+    <Compile Include="DiskSpaceUsage\Icons.fs" />
+    <Compile Include="DiskSpaceUsage\MainUI.fs" />
+    <Compile Include="DiskSpaceUsage\Program.fs" />
   </ItemGroup>
 
   <ItemGroup>

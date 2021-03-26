@@ -1,4 +1,4 @@
-﻿module DiskSpaceUsage.BalancedTreeView
+﻿module DiskSpaceUsage.TreeMapView
 
 open Avalonia.Layout
 open Avalonia.Media
@@ -6,7 +6,7 @@ open Avalonia.Controls
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 
-open BalancedTree
+open TreeMap
 open DiskItem
 open SizeView
 open Styles
@@ -39,7 +39,7 @@ module Canvas =
         Canvas.create (defaults @ attrs)
 
 [<RequireQualifiedAccess>]
-module rec BalancedTreeView =
+module rec TreeMapView =
 
     type Config =
         { children: DiskItem list
@@ -108,8 +108,8 @@ module rec BalancedTreeView =
 
     let branchView depth (branch: Branch<DiskItem>) (config: Config): IView list =
         let size = config.size
-        let leftWeight = BalancedTree.weight branch.left |> double
-        let rightWeight = BalancedTree.weight branch.right |> double
+        let leftWeight = TreeMap.weight branch.left |> double
+        let rightWeight = TreeMap.weight branch.right |> double
         let leftRatio = leftWeight / (leftWeight + rightWeight)
 
         let leftSize, rightSize, rightOffset =
@@ -150,12 +150,12 @@ module rec BalancedTreeView =
             ]
         ]
 
-    let private createTree (depth: int) (tree: TreeNode<DiskItem>) (config: Config): IView list =
+    let private createTree (depth: int) (tree: BinaryTree<DiskItem>) (config: Config): IView list =
         if config.size.width >= minSize.width && config.size.height >= minSize.height
             then
                 match tree with
-                | LeafNode leaf -> leafView depth leaf config
-                | BranchNode branch -> branchView depth branch config
+                | Leaf leaf -> leafView depth leaf config
+                | Branch branch -> branchView depth branch config
             else
                 [ emptyView config ]
 
@@ -172,8 +172,8 @@ module rec BalancedTreeView =
 
         let childViews =
             leaves
-            |> BalancedTree.create
-            |> Option.map BalancedTree.root
+            |> TreeMap.create
+            |> Option.map TreeMap.root
             |> Option.map (fun root -> createTree depth root config)
             |> Option.defaultValue []
 

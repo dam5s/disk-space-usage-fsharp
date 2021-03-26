@@ -1,47 +1,47 @@
-module DiskSpaceUsage.BalancedTree
+module DiskSpaceUsage.TreeMap
 
-type TreeNode<'a> =
-    | LeafNode of Leaf<'a>
-    | BranchNode of Branch<'a>
+type BinaryTree<'a> =
+    | Leaf of Leaf<'a>
+    | Branch of Branch<'a>
 and Leaf<'a> =
     { data: 'a
       weight: int64 }
 and Branch<'a> =
-    { left: TreeNode<'a>
-      right: TreeNode<'a> }
+    { left: BinaryTree<'a>
+      right: BinaryTree<'a> }
 
-type BalancedTree<'a> =
-    private BalancedTree of root:TreeNode<'a>
+type TreeMap<'a> =
+    private TreeMap of root:BinaryTree<'a>
 
 [<RequireQualifiedAccess>]
-module BalancedTree =
+module TreeMap =
 
-    let root (BalancedTree root) = root
+    let root (TreeMap root) = root
 
     let rec weight tree =
         match tree with
-        | LeafNode leaf -> leaf.weight
-        | BranchNode branch -> (weight branch.left) + (weight branch.right)
+        | Leaf leaf -> leaf.weight
+        | Branch branch -> (weight branch.left) + (weight branch.right)
 
     let rec private leafCount tree =
         match tree with
-        | LeafNode _ -> 1
-        | BranchNode branch -> (leafCount branch.left) + (leafCount branch.right)
+        | Leaf _ -> 1
+        | Branch branch -> (leafCount branch.left) + (leafCount branch.right)
 
-    let create (leaves: Leaf<'a> list) =
-        let mutable sortedLeaves: TreeNode<'a> list =
+    let create (leaves: Leaf<'a> list): TreeMap<'a> option =
+        let mutable sortedLeaves: BinaryTree<'a> list =
             leaves
             |> List.sortBy (fun l -> l.weight)
-            |> List.map LeafNode
+            |> List.map Leaf
 
-        let mutable sortedTrees: TreeNode<'a> list = []
+        let mutable sortedTrees: BinaryTree<'a> list = []
 
         let treeIsCompleted () =
             match sortedTrees with
             | [tree] -> leafCount tree = List.length leaves
             | _ -> false
 
-        let takeLightestTree (): TreeNode<'a> option =
+        let takeLightestTree (): BinaryTree<'a> option =
             match sortedLeaves, sortedTrees with
             | leaf :: remainingLeaves, tree :: remainingTrees ->
                 if weight leaf < weight tree
@@ -63,7 +63,7 @@ module BalancedTree =
             | [], [] ->
                 None
 
-        let mutable left: TreeNode<'a> option = None
+        let mutable left: BinaryTree<'a> option = None
 
         while not (treeIsCompleted ()) do
             let lightestTree = takeLightestTree ()
@@ -74,7 +74,7 @@ module BalancedTree =
             | Some leftTree, Some rightTree ->
                 left <- None
                 sortedTrees <- sortedTrees @ [
-                    BranchNode { left = leftTree; right = rightTree }
+                    Branch { left = leftTree; right = rightTree }
                 ]
             | Some leftTree, None ->
                 left <- None
@@ -83,4 +83,4 @@ module BalancedTree =
 
         sortedTrees
         |> List.tryHead
-        |> Option.map BalancedTree
+        |> Option.map TreeMap
