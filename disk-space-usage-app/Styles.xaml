@@ -54,5 +54,9 @@
     <Style Selector="Button.topBar:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="#8000"/>
         <Setter Property="BorderThickness" Value="0.0"/>
+        <Setter Property="RenderTransform" Value="scale(1.0)" />
+    </Style>
+    <Style Selector="Button.topBar:pressed">
+        <Setter Property="RenderTransform" Value="scale(1.0)" />
     </Style>
 </Styles>
