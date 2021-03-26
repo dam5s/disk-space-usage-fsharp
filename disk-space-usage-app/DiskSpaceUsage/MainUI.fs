@@ -137,15 +137,18 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
 let private notLoadedView dispatch =
     Grid.main [
         Grid.children [
+            TextBlock.title "Disk Space Usage" [
+                Grid.row 0
+            ]
             TextBlock.subTitle "No folder selected" [
                 Grid.row 1
-                TextBlock.verticalAlignment VerticalAlignment.Bottom
             ]
             Button.create [
                 Grid.row 2
-                Button.height 50.0
                 Button.onClick (fun _ -> dispatch OpenFolderSelectDialog)
                 Button.content "Select Folder"
+                Button.horizontalAlignment HorizontalAlignment.Center
+                Button.maxWidth 250.0
                 Button.margin (50.0, 0.0)
             ]
         ]
@@ -155,10 +158,10 @@ let private loadingView folderPath dispatch =
     Grid.main [
         Grid.children [
             TextBlock.title "Loading..." [
-                Grid.row 1
+                Grid.row 0
             ]
             TextBlock.subTitle (FolderPath.path folderPath) [
-                Grid.row 2
+                Grid.row 1
             ]
         ]
     ]
@@ -197,8 +200,9 @@ let private topDiskItem nav =
 
 let private backButtonView dispatch =
     Button.icon Icons.arrowLeftCircle [
-        Grid.row 0
+        Grid.row 2
         Button.horizontalAlignment HorizontalAlignment.Left
+        Button.verticalAlignment VerticalAlignment.Center
         Button.onClick (fun _ -> Navigate.back dispatch)
     ]
 
@@ -217,15 +221,16 @@ let private loadedView model (nav: Navigation) dispatch =
     Grid.main [
         Grid.children [
             Button.icon Icons.closeCircle [
-                Grid.row 0
+                Grid.row 2
                 Button.horizontalAlignment HorizontalAlignment.Right
+                Button.verticalAlignment VerticalAlignment.Center
                 Button.onClick (fun _ -> dispatch CloseFolder)
             ]
             TextBlock.title sizeText [
-                Grid.row 1
+                Grid.row 0
             ]
             TextBlock.subTitle topItem.name [
-                Grid.row 2
+                Grid.row 1
             ]
             backButton
             itemView model topItem dispatch

@@ -1,5 +1,8 @@
 ﻿module DiskSpaceUsage.Program
 
+open Avalonia.Controls
+open Avalonia.Media
+open Avalonia.Platform
 open Elmish
 open Avalonia
 open Avalonia.Controls.ApplicationLifetimes
@@ -13,6 +16,10 @@ type MainWindow() as this =
         base.Title <- "Disk Space Usage"
         base.Width <- 1200.0
         base.Height <- 800.0
+        base.ExtendClientAreaToDecorationsHint <- true
+        base.TransparencyLevelHint <- WindowTransparencyLevel.AcrylicBlur
+        base.ExtendClientAreaChromeHints <- ExtendClientAreaChromeHints.PreferSystemChrome
+        base.Background <- Brush.Parse("#8333")
 
         ((MainUI.init this), MainUI.update, MainUI.view)
         |||> Elmish.Program.mkProgram
@@ -29,8 +36,7 @@ type App() =
     inherit Application()
 
     override this.Initialize() =
-        this.Styles.Load "avares://Avalonia.Themes.Default/DefaultTheme.xaml"
-        this.Styles.Load "avares://Avalonia.Themes.Default/Accents/BaseDark.xaml"
+        this.Styles.Load "avares://Avalonia.Themes.Fluent/FluentDark.xaml"
         this.Styles.Load "avares://disk-space-usage-app/Styles.xaml"
 
     override this.OnFrameworkInitializationCompleted() =

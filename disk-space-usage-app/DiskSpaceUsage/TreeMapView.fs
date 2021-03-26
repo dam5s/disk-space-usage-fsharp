@@ -59,12 +59,8 @@ module rec TreeMapView =
 
         let topBar =
             DockPanel.create [
-                Canvas.top titleOffset.top
-                Canvas.left titleOffset.left
                 DockPanel.width titleSize.width
                 DockPanel.height titleSize.height
-                DockPanel.onTapped (fun _ -> config.onItemSelected leaf.data)
-                DockPanel.classes ["topBar"]
                 DockPanel.children [
                     TextBlock.create [ DockPanel.dock Dock.Right
                                        TextBlock.verticalAlignment VerticalAlignment.Center
@@ -76,6 +72,17 @@ module rec TreeMapView =
                                        TextBlock.textTrimming TextTrimming.CharacterEllipsis
                                        TextBlock.text leaf.data.name ]
                 ]
+            ]
+
+        let topBarButton =
+            Button.create [
+                Canvas.top titleOffset.top
+                Canvas.left titleOffset.left
+                Button.width titleSize.width
+                Button.height titleSize.height
+                Button.onTapped (fun _ -> config.onItemSelected leaf.data)
+                Button.classes ["topBar"]
+                Button.content topBar
             ]
 
         let rectangleView children =
@@ -103,7 +110,7 @@ module rec TreeMapView =
 
         [ Canvas.make noOffset size [
             Canvas.background (Backgrounds.next())
-            Canvas.children [ topBar; rectangleView childrenViews ]
+            Canvas.children [ topBarButton; rectangleView childrenViews ]
         ] ]
 
     let branchView depth (branch: Branch<DiskItem>) (config: Config): IView list =

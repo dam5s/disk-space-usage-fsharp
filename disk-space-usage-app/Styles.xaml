@@ -3,22 +3,56 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Style Selector="Button">
+    <Style Selector="TextBlock.title">
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="FontSize" Value="48.0"/>
+    </Style>
+
+    <Style Selector="TextBlock.subTitle">
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="FontSize" Value="24.0"/>
+    </Style>
+
+    <Style Selector="Button /template/ ContentPresenter">
         <Setter Property="Cursor" Value="hand"/>
+        <Setter Property="CornerRadius" Value="4.0"/>
+        <Setter Property="Background" Value="#2fff"/>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#4fff"/>
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#6fff"/>
+    </Style>
+
+    <Style Selector="Button TextBlock">
+        <Setter Property="FontSize" Value="15.0"/>
     </Style>
 
     <Style Selector="Button.icon /template/ ContentPresenter">
-        <Setter Property="CornerRadius" Value="25" />
-        <Setter Property="Width" Value="40" />
-        <Setter Property="Height" Value="40" />
-        <Setter Property="Background" Value="transparent"/>
+        <Setter Property="CornerRadius" Value="25"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Margin" Value="50.0, 0.0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
-    <Style Selector="DockPanel.topBar">
-        <Setter Property="Cursor" Value="hand"/>
-        <Setter Property="Background" Value="#00000000"/>
+    <Style Selector="Button.topBar /template/ ContentPresenter">
+        <Setter Property="CornerRadius" Value="0.0"/>
+        <Setter Property="Background" Value="#0000"/>
+        <Setter Property="BorderThickness" Value="0.0"/>
     </Style>
-    <Style Selector="DockPanel.topBar:pointerover">
-        <Setter Property="Background" Value="#44000000"/>
+    <Style Selector="Button.topBar TextBlock">
+        <Setter Property="FontSize" Value="14.0"/>
+    </Style>
+    <Style Selector="Button.topBar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#4000"/>
+        <Setter Property="BorderThickness" Value="0.0"/>
+    </Style>
+    <Style Selector="Button.topBar:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#8000"/>
+        <Setter Property="BorderThickness" Value="0.0"/>
     </Style>
 </Styles>
