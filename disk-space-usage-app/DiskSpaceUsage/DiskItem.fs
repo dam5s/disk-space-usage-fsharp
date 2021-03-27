@@ -43,9 +43,13 @@ module rec DiskItem =
         | Bytes bytes -> Some bytes
         | Unknown -> None
 
+    let fileSize (fileInfo: FileInfo) =
+        try Bytes fileInfo.Length
+        with _ -> Unknown
+
     let private createFile (fileInfo: FileInfo) =
         { name = fileInfo.Name
-          size = Bytes fileInfo.Length
+          size = fileSize fileInfo
           itemType = File }
 
     let private loadUnreadableRecord folderPath record: Async<DiskItem> =
