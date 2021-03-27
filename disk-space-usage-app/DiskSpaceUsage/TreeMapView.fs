@@ -86,7 +86,7 @@ module rec TreeMapView =
                 Canvas.left titleOffset.left
                 Button.width titleSize.width
                 Button.height titleSize.height
-                Button.onTapped (fun _ -> config.onItemSelected leaf.data)
+                Button.onTapped ((fun _ -> config.onItemSelected leaf.data), OnChangeOf leaf.data)
                 Button.classes ["topBar"]
                 Button.content topBar
             ]

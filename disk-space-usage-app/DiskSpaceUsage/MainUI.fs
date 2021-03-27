@@ -214,7 +214,7 @@ let private breadcrumbsView dispatch nav =
         |> List.map (fun p ->
             Button.create [
                 Button.content p.diskItem.name
-                Button.onTapped (fun _ -> NavigateTo p |> dispatch )
+                Button.onTapped ((fun _ -> dispatch (NavigateTo p)), OnChangeOf p)
             ] :> IView
         )
 
