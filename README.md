@@ -24,3 +24,7 @@ dotnet build
 ```
 dotnet run
 ```
+
+### Screenshot
+
+![Disk Space Usage App](assets/screenshot.jpg)
