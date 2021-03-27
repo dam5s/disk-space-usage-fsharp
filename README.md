@@ -8,6 +8,10 @@ and its [functional extensions](https://avaloniacommunity.github.io/Avalonia.Fun
 
 It runs cross-platform (on Windows, Linux and Mac OS) using **.NET 5**.
 
+## Screenshot
+
+![Screenshot](screenshot.png)
+
 ## Local Setup
 
 ### Dependencies
