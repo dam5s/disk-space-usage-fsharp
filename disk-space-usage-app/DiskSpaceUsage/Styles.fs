@@ -5,20 +5,22 @@ open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open Avalonia.Layout
 
+open Icons
+
 [<RequireQualifiedAccess>]
 module Button =
-    let icon (content: IView) attrs: IView =
+    let icon color shape attrs: IView =
         let defaults = [
-            Button.content content
+            Button.content (Icons.create color shape )
             Button.classes ["icon"]
         ]
         Button.create (defaults @ attrs) :> IView
 
-    let navBarIcon content attrs =
+    let navBarIcon color shape attrs =
         let defaults = [
             Button.verticalAlignment VerticalAlignment.Center
         ]
-        icon content (defaults @ attrs)
+        icon color shape (defaults @ attrs)
 
 [<RequireQualifiedAccess>]
 module Grid =

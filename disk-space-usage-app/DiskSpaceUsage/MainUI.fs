@@ -42,7 +42,7 @@ type Msg =
 
 [<RequireQualifiedAccess>]
 module private Navigate =
-    let mutable private state = Debounce.init 500
+    let mutable private state = Debounce.init 200
 
     let private debounce f =
         state <- Debounce.invoke f state
@@ -190,12 +190,18 @@ let private itemView model (nav: DiskItemNavigation) dispatch =
     | File -> fileView nav dispatch
     | Folder attrs -> folderView model nav attrs.children dispatch
 
-let private upButtonView dispatch attrs =
+let private upButtonView parent dispatch attrs =
+    let (enabled, color) =
+        parent
+        |> Option.map (fun _ -> true, Enabled)
+        |> Option.defaultValue (false, Disabled)
+
     let defaults = [
         Button.verticalAlignment VerticalAlignment.Center
         Button.onClick (fun _ -> Navigate.up dispatch)
+        Button.isEnabled enabled
     ]
-    Button.icon Icons.arrowLeftCircle (defaults @ attrs)
+    Button.icon color ArrowLeftCircle (defaults @ attrs)
 
 let rec navItemParents firstParent =
     match firstParent with
@@ -233,17 +239,15 @@ let private emptyView =
 
 let navBar nav dispatch =
     let upButton =
-        nav.parent
-        |> Option.map (fun _ -> upButtonView dispatch [
+        upButtonView nav.parent dispatch [
             DockPanel.dock Dock.Left
-        ])
-        |> Option.defaultValue emptyView
+        ]
 
     let breadCrumbs =
         breadcrumbsView dispatch nav
 
     let closeButton =
-        Button.navBarIcon Icons.closeCircle [
+        Button.navBarIcon Enabled CloseCircle [
             DockPanel.dock Dock.Right
             Button.horizontalAlignment HorizontalAlignment.Right
             Button.onClick (fun _ -> dispatch CloseFolder)
