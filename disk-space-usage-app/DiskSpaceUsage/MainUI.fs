@@ -190,40 +190,86 @@ let private itemView model (nav: DiskItemNavigation) dispatch =
     | File -> fileView nav dispatch
     | Folder attrs -> folderView model nav attrs.children dispatch
 
-let private upButtonView dispatch =
-    Button.icon Icons.arrowLeftCircle [
-        Grid.row 2
-        Button.horizontalAlignment HorizontalAlignment.Left
+let private upButtonView dispatch attrs =
+    let defaults = [
         Button.verticalAlignment VerticalAlignment.Center
         Button.onClick (fun _ -> Navigate.up dispatch)
     ]
+    Button.icon Icons.arrowLeftCircle (defaults @ attrs)
+
+let rec navItemParents firstParent =
+    match firstParent with
+    | Some parent -> (navItemParents parent.parent) @ [ parent ]
+    | None -> []
+
+let private breadcrumbsView dispatch nav =
+    let parentsButtons =
+        navItemParents nav.parent
+        |> List.map (fun p ->
+            Button.create [
+                Button.content p.diskItem.name
+                Button.onTapped (fun _ -> NavigateTo p |> dispatch )
+            ] :> IView
+        )
+
+    let children = parentsButtons @ [
+        Button.create [
+            Button.content nav.diskItem.name
+            Button.isEnabled false
+        ]
+    ]
+
+    StackPanel.create [
+        DockPanel.dock Dock.Right
+        StackPanel.horizontalAlignment HorizontalAlignment.Center
+        StackPanel.orientation Orientation.Horizontal
+        StackPanel.children children
+    ]
 
 let private emptyView =
-    TextBlock.create [ Grid.row 0 ] :> IView
+    TextBlock.create [
+        DockPanel.dock Dock.Right
+    ] :> IView
+
+let navBar nav dispatch =
+    let upButton =
+        nav.parent
+        |> Option.map (fun _ -> upButtonView dispatch [
+            DockPanel.dock Dock.Left
+        ])
+        |> Option.defaultValue emptyView
+
+    let breadCrumbs =
+        breadcrumbsView dispatch nav
+
+    let closeButton =
+        Button.navBarIcon Icons.closeCircle [
+            DockPanel.dock Dock.Right
+            Button.horizontalAlignment HorizontalAlignment.Right
+            Button.onClick (fun _ -> dispatch CloseFolder)
+        ]
+
+    DockPanel.create [
+        Grid.row 2
+        DockPanel.children [
+            upButton
+            closeButton
+            breadCrumbs
+        ]
+    ]
 
 let private loadedView model (nav: DiskItemNavigation) dispatch =
     let sizeText = SizeView.text nav.diskItem.size
 
-    let backButton =
-        nav.parent
-        |> Option.map (fun _ -> upButtonView dispatch)
-        |> Option.defaultValue emptyView
-
     Grid.main [
         Grid.children [
-            Button.icon Icons.closeCircle [
-                Grid.row 2
-                Button.horizontalAlignment HorizontalAlignment.Right
-                Button.verticalAlignment VerticalAlignment.Center
-                Button.onClick (fun _ -> dispatch CloseFolder)
-            ]
             TextBlock.title sizeText [
                 Grid.row 0
             ]
             TextBlock.subTitle nav.diskItem.name [
                 Grid.row 1
             ]
-            backButton
+            navBar nav dispatch
             itemView model nav dispatch
         ]
     ]

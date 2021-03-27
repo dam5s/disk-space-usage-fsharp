@@ -3,6 +3,7 @@
 open Avalonia.Controls
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
+open Avalonia.Layout
 
 [<RequireQualifiedAccess>]
 module Button =
@@ -12,6 +13,12 @@ module Button =
             Button.classes ["icon"]
         ]
         Button.create (defaults @ attrs) :> IView
+
+    let navBarIcon content attrs =
+        let defaults = [
+            Button.verticalAlignment VerticalAlignment.Center
+        ]
+        icon content (defaults @ attrs)
 
 [<RequireQualifiedAccess>]
 module Grid =
