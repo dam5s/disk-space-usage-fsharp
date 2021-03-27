@@ -59,4 +59,8 @@
     <Style Selector="Button.topBar:pressed">
         <Setter Property="RenderTransform" Value="scale(1.0)" />
     </Style>
+
+    <Style Selector="Canvas.refreshing">
+        <Setter Property="Background" Value="#8000" />
+    </Style>
 </Styles>
