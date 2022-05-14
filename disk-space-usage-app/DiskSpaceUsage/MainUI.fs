@@ -92,7 +92,14 @@ let private selectFolderAsync window =
 
 let private loadFolderUsageAsync path =
     async {
+        let timer = System.Diagnostics.Stopwatch()
+        timer.Start()
+
         let! usage = DiskItem.loadAsync Subscriptions.notifyLoading path
+        
+        timer.Stop()
+        printfn $"Finished loading in %d{timer.ElapsedMilliseconds}ms"
+
         return FinishLoading usage
     }
 

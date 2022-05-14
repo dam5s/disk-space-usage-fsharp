@@ -1,6 +1,7 @@
 ﻿module DiskSpaceUsage.DiskItem
 
 open System.IO
+open FSharp.Control
 open FolderPath
 
 type SizeOnDisk =
@@ -61,6 +62,17 @@ module rec DiskItem =
                   size = Unknown
                   itemType = itemType }
         }
+        
+    let loadSubFolders notify (dirs: DirectoryInfo[]) =
+        asyncSeq {
+            for d in dirs do
+                let pathOpt = FolderPath.create d.FullName
+                match pathOpt with
+                | Some path -> yield loadAsync notify path
+                | None -> ()
+        }
+        |> AsyncSeq.mapAsyncParallel id
+        |> AsyncSeq.toListAsync
 
     let private loadReadableRecord notify folderPath record: Async<DiskItem> =
         async {
@@ -69,13 +81,9 @@ module rec DiskItem =
                 |> Array.toList
                 |> List.map createFile
 
-            let subFolderPaths =
-                record.dirs
-                |> Array.choose (fun d -> FolderPath.create d.FullName)
+            let! subFolders = loadSubFolders notify record.dirs
 
-            for subFolderPath in subFolderPaths do
-                let! subFolder = loadAsync notify subFolderPath
-                children <- subFolder :: children
+            children <- subFolders @ children
 
             let size =
                 children
